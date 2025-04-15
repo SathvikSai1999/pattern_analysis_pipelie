@@ -1,0 +1,2 @@
+"ID","Description","GeneRatio","BgRatio","RichFactor","FoldEnrichment","zScore","pvalue","p.adjust","qvalue","geneID","Count"
+"GO:0031201","SNARE complex","2/9","49/28829",0.0408163265306122,130.743764172336,16.0627781833041,0.000101109193365443,0.00697653434221557,0.00329935262560919,"Cplx1/Snap25",2
