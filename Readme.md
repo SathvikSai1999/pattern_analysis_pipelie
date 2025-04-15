@@ -44,7 +44,7 @@ The pipeline utilizes various scripts to extract motifs, perform differential ge
   - `output/pathway/original/cccm.csv`: Pathway analysis results.
   - `output/pathway/3hop/cccm.csv`: Pathway analysis results for 3-hop patterns.
   
-5.  [generate_rank_files.py] (#works on exteact_motif output files)
+5.  [generate_rank_files.py](#works on exteact_motif output files)
 - **Purpose**: Generates ranked lists of genes and patterns for downstream analysis.
 - **Outputs**: 
   - `original_rank.txt`: Ranked list of genes for original patterns.
