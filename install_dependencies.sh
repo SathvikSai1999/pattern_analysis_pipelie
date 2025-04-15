@@ -2,10 +2,14 @@
 
 set -e  # Exit if any command fails
 
+echo "Setting executable permissions for all script files..."
+chmod +x *.py *.r *.sh
+echo "Permissions set successfully!"
+
 echo "🔍 Checking if Conda is installed..."
 
 if ! command -v conda &> /dev/null; then
-    echo "🟡 Conda not found. Preparing to install Miniconda..."
+    echo "Conda not found. Preparing to install Miniconda..."
 
     INSTALL_DIR="$HOME/miniconda"
 
@@ -112,5 +116,5 @@ for (package in packages) {
     install_if_missing(package)
 }'
 
-echo "🎉 All dependencies installed successfully in the 'trimnn' environment!"
+echo " All dependencies installed successfully in the 'trimnn' environment!"
 
