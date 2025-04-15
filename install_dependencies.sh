@@ -44,11 +44,11 @@ if ! command -v conda &> /dev/null; then
         exit 1
     fi
 
-    echo "📦 Downloading Miniconda from $INSTALLER_URL"
+    echo "Downloading Miniconda from $INSTALLER_URL"
     curl -o miniconda.sh "$INSTALLER_URL"
     bash miniconda.sh -b $INSTALL_FLAG -p "$INSTALL_DIR"
 
-    echo "⚙️ Initializing Conda..."
+    echo "Initializing Conda..."
     eval "$($INSTALL_DIR/bin/conda shell.bash hook)"
     conda init
 
