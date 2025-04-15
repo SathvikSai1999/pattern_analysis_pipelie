@@ -16,32 +16,32 @@ run_step() {
     local command=$2
     local log_file="$LOG_DIR/${step_name}_$(date +%Y%m%d_%H%M%S).log"
     
-    log "🚀 Starting $step_name..."
+    log "Starting $step_name..."
     log "Command: $command"
     
     if eval "$command" > "$log_file" 2>&1; then
-        log "✅ $step_name completed successfully"
+        log "$step_name completed successfully"
         return 0
     else
-        log "❌ Error in $step_name. Check $log_file for details"
+        log "Error in $step_name. Check $log_file for details"
         return 1
     fi
 }
 
-# 🚀 Ensure correct environment is activated
-log "🔁 Activating 'trimnn' environment..."
+# Ensure correct environment is activated
+log "Activating 'trimnn' environment..."
 source "$(conda info --base)/etc/profile.d/conda.sh"
-conda activate /Users/sathviksai/miniconda/envs/trimnn
+conda activate trimnn
 
 log "==================================="
-log "🚀 Starting TrimNN Analysis Pipeline"
+log "Starting TrimNN Analysis Pipeline"
 log "==================================="
 
 # Set number of parallel jobs (adjust based on your system)
 MAX_JOBS=4
 
 # Run steps in parallel where possible
-log "🔍 Running parallel steps..."
+log "Running parallel steps..."
 (
     run_step "extract_motifs" "python extract_motifs.py" &
     run_step "DEG" "Rscript DEG.r" &
@@ -49,7 +49,7 @@ log "🔍 Running parallel steps..."
 ) | tee -a "$LOG_FILE"
 
 # Run dependent steps sequentially
-log "🔍 Running sequential steps..."
+log "Running sequential steps..."
 run_step "extract_deg" "python extract_deg.py"
 run_step "go_and_pathway" "Rscript go_and_pathway.r"
 run_step "cellchat" "Rscript cellchat.r"
