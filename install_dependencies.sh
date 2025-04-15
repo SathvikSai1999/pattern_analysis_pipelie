@@ -116,7 +116,8 @@ cran_packages <- c(
     "gridExtra",
     "knitr",
     "rmarkdown",
-    "devtools"  # Required for GitHub installation
+    "devtools",  # Required for GitHub installation
+    "openxlsx"   # Added for go_and_pathway.r
 )
 
 # Install CRAN packages
@@ -129,6 +130,14 @@ if (!require("devtools", quietly = TRUE)) {
     cat("\nInstalling devtools package which is required for GitHub installations...\n")
     install.packages("devtools", repos = "https://cloud.r-project.org/", dependencies = TRUE)
 }
+
+# Install BioConductor dependencies
+cat("\nInstalling Bioconductor dependencies...\n")
+if (!require("BiocManager", quietly = TRUE)) {
+    install.packages("BiocManager")
+}
+# Install multtest which is required by metap
+BiocManager::install("multtest", update = FALSE, ask = FALSE)
 
 # Install CellChat directly from GitHub since it has compatibility issues with Bioconductor
 cat("\nInstalling CellChat directly from GitHub...\n")
