@@ -136,8 +136,14 @@ cat("\nInstalling Bioconductor dependencies...\n")
 if (!require("BiocManager", quietly = TRUE)) {
     install.packages("BiocManager")
 }
-# Install multtest which is required by metap
-BiocManager::install("multtest", update = FALSE, ask = FALSE)
+# Install required Bioconductor packages
+BiocManager::install(c(
+    "multtest",       # Required by metap
+    "org.Mm.eg.db",   # Mouse genome annotations
+    "org.Hs.eg.db",   # Human genome annotations 
+    "ReactomePA",     # For pathway analysis
+    "ComplexHeatmap"  # For heatmap visualization
+), update = FALSE, ask = FALSE)
 
 # Install CellChat directly from GitHub since it has compatibility issues with Bioconductor
 cat("\nInstalling CellChat directly from GitHub...\n")
