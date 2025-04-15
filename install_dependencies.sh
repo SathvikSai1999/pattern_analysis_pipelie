@@ -88,9 +88,49 @@ pip install numpy pandas scipy scikit-learn matplotlib seaborn
 # R dependencies
 echo "Installing R and Bioconductor dependencies..."
 Rscript -e '
-# List of required packages
-packages <- c(
-    "CellChat",
+# Set CRAN mirror explicitly
+repos <- c(CRAN = "https://cloud.r-project.org/")
+options(repos = repos)
+
+# Function to safely install packages
+install_package <- function(package_name) {
+    tryCatch({
+        if (!require(package_name, character.only = TRUE, quietly = TRUE)) {
+            cat(sprintf("\nInstalling package: %s\n", package_name))
+            install.packages(package_name, repos = "https://cloud.r-project.org/", dependencies = TRUE)
+        } else {
+            cat(sprintf("\nPackage already installed: %s\n", package_name))
+        }
+    }, error = function(e) {
+        cat(sprintf("\nError installing %s: %s\n", package_name, e$message))
+    })
+}
+
+# Function to install Bioconductor packages
+install_bioc_package <- function(package_name) {
+    tryCatch({
+        if (!require(package_name, character.only = TRUE, quietly = TRUE)) {
+            cat(sprintf("\nInstalling Bioconductor package: %s\n", package_name))
+            if (!require("BiocManager", quietly = TRUE)) {
+                install.packages("BiocManager")
+            }
+            BiocManager::install(package_name, update = FALSE, ask = FALSE)
+        } else {
+            cat(sprintf("\nBioconductor package already installed: %s\n", package_name))
+        }
+    }, error = function(e) {
+        cat(sprintf("\nError installing Bioconductor package %s: %s\n", package_name, e$message))
+        cat("\nTrying alternative installation method...\n")
+        # Try installing from GitHub for CellChat if Bioconductor fails
+        if (package_name == "CellChat" && !require("devtools", quietly = TRUE)) {
+            install.packages("devtools")
+            devtools::install_github("sqjin/CellChat")
+        }
+    })
+}
+
+# Install basic CRAN packages
+cran_packages <- c(
     "gtools",
     "metap",
     "rcompanion",
@@ -98,28 +138,39 @@ packages <- c(
     "ggplot2",
     "gridExtra",
     "knitr",
-    "rmarkdown"
+    "rmarkdown",
+    "devtools"  # For potential GitHub installation
 )
 
-# Function to install packages if not already installed
-install_if_missing <- function(package) {
-    if (!require(package, character.only = TRUE)) {
-        if (package == "CellChat") {
-            # CellChat requires BiocManager
-            if (!require("BiocManager", quietly = TRUE))
-                install.packages("BiocManager")
-            BiocManager::install("CellChat")
-        } else {
-            install.packages(package)
-        }
-    }
+# Install Bioconductor packages
+bioc_packages <- c(
+    "CellChat"
+)
+
+# Install CRAN packages
+for (pkg in cran_packages) {
+    install_package(pkg)
 }
 
-# Install each package
-for (package in packages) {
-    cat(sprintf("\nInstalling package: %s\n", package))
-    install_if_missing(package)
-}'
+# Install Bioconductor packages
+for (pkg in bioc_packages) {
+    install_bioc_package(pkg)
+}
+
+# Verify installation
+installed_packages <- rownames(installed.packages())
+missing_packages <- c(cran_packages, bioc_packages)[!c(cran_packages, bioc_packages) %in% installed_packages]
+
+if (length(missing_packages) > 0) {
+    cat("\n\nWarning: The following packages could not be installed:\n")
+    cat(paste(missing_packages, collapse = ", "), "\n")
+    cat("You may need to install them manually.\n")
+} else {
+    cat("\n\nAll required R packages have been successfully installed.\n")
+}
+'
+
+echo " R dependencies installation attempt completed. Check the output for any warnings or errors."
 
 echo "All dependencies installed successfully in the '$ENV_NAME' environment!"
 
