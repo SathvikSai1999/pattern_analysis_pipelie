@@ -6,7 +6,7 @@ echo "Setting executable permissions for all script files..."
 chmod +x *.py *.r *.sh
 echo "Permissions set successfully!"
 
-echo "🔍 Checking if Conda is installed..."
+echo "Checking if Conda is installed..."
 
 if ! command -v conda &> /dev/null; then
     echo "Conda not found. Preparing to install Miniconda..."
@@ -106,30 +106,7 @@ install_package <- function(package_name) {
     })
 }
 
-# Function to install Bioconductor packages
-install_bioc_package <- function(package_name) {
-    tryCatch({
-        if (!require(package_name, character.only = TRUE, quietly = TRUE)) {
-            cat(sprintf("\nInstalling Bioconductor package: %s\n", package_name))
-            if (!require("BiocManager", quietly = TRUE)) {
-                install.packages("BiocManager")
-            }
-            BiocManager::install(package_name, update = FALSE, ask = FALSE)
-        } else {
-            cat(sprintf("\nBioconductor package already installed: %s\n", package_name))
-        }
-    }, error = function(e) {
-        cat(sprintf("\nError installing Bioconductor package %s: %s\n", package_name, e$message))
-        cat("\nTrying alternative installation method...\n")
-        # Try installing from GitHub for CellChat if Bioconductor fails
-        if (package_name == "CellChat" && !require("devtools", quietly = TRUE)) {
-            install.packages("devtools")
-            devtools::install_github("sqjin/CellChat")
-        }
-    })
-}
-
-# Install basic CRAN packages
+# Install basic CRAN packages first
 cran_packages <- c(
     "gtools",
     "metap",
@@ -139,12 +116,7 @@ cran_packages <- c(
     "gridExtra",
     "knitr",
     "rmarkdown",
-    "devtools"  # For potential GitHub installation
-)
-
-# Install Bioconductor packages
-bioc_packages <- c(
-    "CellChat"
+    "devtools"  # Required for GitHub installation
 )
 
 # Install CRAN packages
@@ -152,14 +124,47 @@ for (pkg in cran_packages) {
     install_package(pkg)
 }
 
-# Install Bioconductor packages
-for (pkg in bioc_packages) {
-    install_bioc_package(pkg)
+# Make sure devtools is available
+if (!require("devtools", quietly = TRUE)) {
+    cat("\nInstalling devtools package which is required for GitHub installations...\n")
+    install.packages("devtools", repos = "https://cloud.r-project.org/", dependencies = TRUE)
 }
 
-# Verify installation
+# Install CellChat directly from GitHub since it has compatibility issues with Bioconductor
+cat("\nInstalling CellChat directly from GitHub...\n")
+tryCatch({
+    if (!require("CellChat", quietly = TRUE)) {
+        # Load devtools
+        library(devtools)
+        
+        # Install dependencies first
+        if (!require("BiocManager", quietly = TRUE)) {
+            install.packages("BiocManager")
+        }
+        
+        BiocManager::install(c("ComplexHeatmap", "circlize"), update = FALSE, ask = FALSE)
+        
+        # Install CellChat from GitHub
+        devtools::install_github("sqjin/CellChat")
+        
+        # Check if installation succeeded
+        if (require("CellChat", quietly = TRUE)) {
+            cat("\nCellChat successfully installed from GitHub!\n")
+        } else {
+            cat("\nFailed to install CellChat from GitHub. You may need to install it manually.\n")
+        }
+    } else {
+        cat("\nCellChat is already installed.\n")
+    }
+}, error = function(e) {
+    cat(sprintf("\nError installing CellChat from GitHub: %s\n", e$message))
+    cat("\nPlease install CellChat manually following instructions at: https://github.com/sqjin/CellChat\n")
+})
+
+# Verify installation of all packages
+all_packages <- c(cran_packages, "CellChat")
 installed_packages <- rownames(installed.packages())
-missing_packages <- c(cran_packages, bioc_packages)[!c(cran_packages, bioc_packages) %in% installed_packages]
+missing_packages <- all_packages[!all_packages %in% installed_packages]
 
 if (length(missing_packages) > 0) {
     cat("\n\nWarning: The following packages could not be installed:\n")
@@ -170,7 +175,7 @@ if (length(missing_packages) > 0) {
 }
 '
 
-echo " R dependencies installation attempt completed. Check the output for any warnings or errors."
+echo "R dependencies installation attempt completed. Check the output for any warnings or errors."
 
 echo "All dependencies installed successfully in the '$ENV_NAME' environment!"
 
