@@ -5,8 +5,9 @@ The pipeline utilizes various scripts to extract motifs, perform differential ge
 
 
 # Running the pipeline
-1. install_dependencies.sh
-2. run_pttern_analysis_pipeline.sh
+1. chmod +x *.py *.r *.sh
+2. install_dependencies.sh
+3. run_pttern_analysis_pipeline.sh
 
 
 ## Table of Contents
