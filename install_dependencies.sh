@@ -6,7 +6,7 @@ echo "Setting executable permissions for all script files..."
 chmod +x *.py *.r *.sh
 echo "Permissions set successfully!"
 
-echo "Checking if Conda is installed..."
+echo "🔍 Checking if Conda is installed..."
 
 if ! command -v conda &> /dev/null; then
     echo "Conda not found. Preparing to install Miniconda..."
@@ -44,11 +44,11 @@ if ! command -v conda &> /dev/null; then
         exit 1
     fi
 
-    echo "Downloading Miniconda from $INSTALLER_URL"
+    echo "📦 Downloading Miniconda from $INSTALLER_URL"
     curl -o miniconda.sh "$INSTALLER_URL"
     bash miniconda.sh -b $INSTALL_FLAG -p "$INSTALL_DIR"
 
-    echo "Initializing Conda..."
+    echo "⚙️ Initializing Conda..."
     eval "$($INSTALL_DIR/bin/conda shell.bash hook)"
     conda init
 
@@ -82,11 +82,11 @@ else
 fi
 
 # Python dependencies
-echo "Installing Python dependencies..."
+echo "📦 Installing Python dependencies..."
 pip install numpy pandas scipy scikit-learn matplotlib seaborn
 
 # R dependencies
-echo "Installing R and Bioconductor dependencies..."
+echo "📦 Installing R and Bioconductor dependencies..."
 Rscript -e '
 # Set CRAN mirror explicitly
 repos <- c(CRAN = "https://cloud.r-project.org/")
@@ -117,7 +117,9 @@ cran_packages <- c(
     "knitr",
     "rmarkdown",
     "devtools",  # Required for GitHub installation
-    "openxlsx"   # Added for go_and_pathway.r
+    "openxlsx",  # Added for go_and_pathway.r
+    "ComplexUpset", # Added for go_and_pathway.r
+    "ggvenn"     # Added for go_and_pathway.r
 )
 
 # Install CRAN packages
@@ -191,6 +193,4 @@ if (length(missing_packages) > 0) {
 '
 
 echo "R dependencies installation attempt completed. Check the output for any warnings or errors."
-
 echo "All dependencies installed successfully in the '$ENV_NAME' environment!"
-
