@@ -59,29 +59,34 @@ else
     eval "$(conda shell.bash hook)"
 fi
 
+# Get conda base directory
+CONDA_BASE=$(conda info --base)
+ENV_NAME="trimnn"
+ENV_PATH="${CONDA_BASE}/envs/${ENV_NAME}"
+
 # Check if we're already in the trimnn environment
-if [[ "$CONDA_DEFAULT_ENV" == "trimnn" ]]; then
-    echo "Already in 'trimnn' environment. Skipping activation."
+if [[ "$CONDA_DEFAULT_ENV" == "$ENV_NAME" ]]; then
+    echo "Already in '$ENV_NAME' environment. Skipping activation."
 else
     # Environment setup
-    echo "📦 Checking for existing 'trimnn' environment..."
-    if [ -d "/Users/sathviksai/miniconda/envs/trimnn" ]; then
-        echo "Environment 'trimnn' already exists. Skipping creation."
+    echo "📦 Checking for existing '$ENV_NAME' environment..."
+    if conda env list | grep -q "^$ENV_NAME "; then
+        echo "Environment '$ENV_NAME' already exists. Skipping creation."
     else
-        echo "Creating Conda environment 'trimnn' with Python 3.9..."
-        conda create -n trimnn python=3.9 -y
+        echo "Creating Conda environment '$ENV_NAME' with Python 3.9..."
+        conda create -n "$ENV_NAME" python=3.9 -y
     fi
 
-    echo "Activating 'trimnn' environment..."
-    conda activate /Users/sathviksai/miniconda/envs/trimnn
+    echo "Activating '$ENV_NAME' environment..."
+    conda activate "$ENV_NAME"
 fi
 
 # Python dependencies
-echo "📦 Installing Python dependencies..."
+echo "Installing Python dependencies..."
 pip install numpy pandas scipy scikit-learn matplotlib seaborn
 
 # R dependencies
-echo "📦 Installing R and Bioconductor dependencies..."
+echo "Installing R and Bioconductor dependencies..."
 Rscript -e '
 # List of required packages
 packages <- c(
@@ -116,5 +121,5 @@ for (package in packages) {
     install_if_missing(package)
 }'
 
-echo " All dependencies installed successfully in the 'trimnn' environment!"
+echo "All dependencies installed successfully in the '$ENV_NAME' environment!"
 
