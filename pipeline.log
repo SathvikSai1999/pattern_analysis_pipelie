@@ -1,0 +1,14 @@
+[2025-04-23 23:32:16] Activating 'trimnn' environment...
+[2025-04-23 23:32:17] Using Python interpreter: /Users/sathviksai/anaconda3/envs/trimnn/bin/python
+[2025-04-23 23:32:17] ===================================
+[2025-04-23 23:32:17] Starting TrimNN Analysis Pipeline
+[2025-04-23 23:32:17] ===================================
+[2025-04-23 23:32:17] Running parallel steps...
+[2025-04-23 23:32:17] Starting DEG...
+[2025-04-23 23:32:17] Starting extract_motifs...
+[2025-04-23 23:32:17] Command: /Users/sathviksai/anaconda3/envs/trimnn/bin/python extract_motifs.py --hop-distance=3
+[2025-04-23 23:32:17] Command: Rscript DEG.r --p-adj-cutoff=0.05
+[2025-04-23 23:35:09] extract_motifs completed successfully
+[2025-04-23 23:51:04] DEG completed successfully
+./run_pattern_analysis_pipeline.sh: line 313: unexpected EOF while looking for matching `"'
+./run_pattern_analysis_pipeline.sh: line 315: syntax error: unexpected end of file
