@@ -51,7 +51,6 @@ def extract_motifs_id(file, gene_file, id_file,name):
     
     mtf_ids = sorted(np.unique([int(row[1]) for row in mtf_gene]))
 
-
     # Debugging output to check indices
     print("Available indices in df (first check):", df.index.tolist()[:10])  # Print first 10 row IDs
     print("Trying to filter using (first check):", mtf_ids[:10])  # Print first 10 lookup values
@@ -65,13 +64,12 @@ def extract_motifs_id(file, gene_file, id_file,name):
     filtered_df = df.reindex(mtf_ids).dropna()
     cell_types = filtered_df['top_level_cell_type']
 
-
-
-    path = f'data/extracted_matrix/original/{name}/'
-    if not os.path.exists(path):
-         os.makedirs(path)
+    # Create output directory structure
+    output_path = f'output/motifs/original/{name}/'
+    if not os.path.exists(output_path):
+         os.makedirs(output_path)
     
-    with open(f'{path}cell_types.txt', 'w') as f:
+    with open(f'{output_path}cell_types.txt', 'w') as f:
         for item in cell_types:
             f.write(f"{item}\n")
 
@@ -86,11 +84,11 @@ def extract_motifs_id(file, gene_file, id_file,name):
     all_cell_id = sorted(allcell_label.keys())
     all_label = [[allcell_label[i]] for i in all_cell_id]
 
-    with open(f'{path}mtf&non-motif_label.txt','w') as f:
+    with open(f'{output_path}mtf&non-motif_label.txt','w') as f:
          writer = csv.writer(f)
          writer.writerows(all_label)
          
-    with open(f'{path}matrix.txt', 'w', newline='') as f:       
+    with open(f'{output_path}matrix.txt', 'w', newline='') as f:       
         writer = csv.writer(f)
         writer.writerow(['%%MatrixMarket matrix coordinate real general'])
         writer.writerow([f'{row_num} {col_num} {nonzero_num}'])
@@ -105,19 +103,7 @@ def extract_motifs_id(file, gene_file, id_file,name):
     for sim in tri.simplices:
          if len(set(sim)&set(motif_list))>1:
               mtf_tri.append(sim)
-    '''
-    for i in range(len(id_df)):
-         mtf_tri.append(sorted([ast.literal_eval(id_df[0][i])[j] for j in [0,1,2]]))
-         mtf_tri.append(sorted([ast.literal_eval(id_df[0][i])[j] for j in [0,1,3]]))
-    '''
 
-
-    
-    '''
-    for simplice in tri.simplices:
-         if sorted(list(simplice)) in mtf_tri:
-              mtf_count += 1
-    '''
     mtf_hop_list = []
     for i in motif_list:
             mtf_hop_list.append(i)
@@ -156,12 +142,12 @@ def extract_motifs_id(file, gene_file, id_file,name):
     filtered_df = df.reindex(mtf_ids).dropna()
     cell_types = filtered_df['top_level_cell_type']
 
-
-    path = f'data/extracted_matrix/3hop/{name}/'
-    if not os.path.exists(path):
-         os.makedirs(path)
+    # Create output directory structure for 3hop
+    output_path = f'output/motifs/3hop/{name}/'
+    if not os.path.exists(output_path):
+         os.makedirs(output_path)
     
-    with open(f'{path}cell_types.txt', 'w') as f:
+    with open(f'{output_path}cell_types.txt', 'w') as f:
         for item in cell_types:
             f.write(f"{item}\n")
     
@@ -176,11 +162,11 @@ def extract_motifs_id(file, gene_file, id_file,name):
     all_cell_id = sorted(allcell_label.keys())
     all_label = [[allcell_label[i]] for i in all_cell_id]
          
-    with open(f'{path}mtf&non-motif_label.txt','w') as f:
+    with open(f'{output_path}mtf&non-motif_label.txt','w') as f:
          writer = csv.writer(f)
          writer.writerows(all_label)
          
-    with open(f'{path}matrix.txt', 'w', newline='') as f:       
+    with open(f'{output_path}matrix.txt', 'w', newline='') as f:       
         writer = csv.writer(f)
         writer.writerow(['%%MatrixMarket matrix coordinate real general'])
         writer.writerow([f'{row_num} {col_num} {nonzero_num}'])

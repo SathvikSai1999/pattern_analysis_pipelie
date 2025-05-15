@@ -4,12 +4,12 @@ A comprehensive pipeline for analyzing spatial transcriptomics data, including m
 
 ## Overview
 
-The pipeline utilizes various scripts to extract motifs, perform differential gene expression analysis, and analyze cell interactions using the CellChat package. It performs the following analyses:
+The pipeline performs the following analyses:
 1. Motif extraction from spatial data
 2. Differential Expression Gene (DEG) analysis
 3. Gene Ontology (GO) and pathway analysis
 4. CellChat analysis for cell-cell communication
-5. Size and Effect Size analysis
+5. Size and Effect Size analysis (Size3ES)
 
 ## Installation
 
@@ -35,125 +35,142 @@ chmod +x *.py *.r *.sh
 ./install_dependencies.sh
 ```
 
-## Running the Pipeline
+## Usage
 
 ### Basic Usage
 ```bash
+# Run entire pipeline with default settings
 ./run_pattern_analysis_pipeline.sh
-```
-This will run the pipeline with all default parameters.
 
-### Advanced Usage with Parameters
+# Run specific analyses
+./run_pattern_analysis_pipeline.sh --run-only deg,go
+```
+
+### Complete Pipeline Example
 ```bash
 ./run_pattern_analysis_pipeline.sh \
-  --hop-distance 3 \
-  --DEG-p-adj-cutoff 0.05 \
-  --go-pvalue-cutoff 0.01 \
-  --pathway-db Reactome \
-  --go-qvalue-cutoff 0.05 \
-  --go-ontology-types "BP,MF,CC" \
-  --go-show-category 20 \
-  --cellchat-type truncatedMean \
-  --cellchat-trim 0.1 \
-  --cellchat-search "Secreted Signaling" \
-  --size3es-months "8,13" \
-  --size3es-replicates "1,2" \
-  --size3es-control-group control \
-  --size3es-pvalue-cutoff 0.05 \
-  --size3es-effect-size-threshold 0.1 \
-  --size3es-multiple-testing-correction BH
+    # Motif Analysis
+    --motif-input-dir data/motifs \
+    --motif-output-dir output/motifs \
+    
+    # DEG Analysis
+    --deg-input-dir data/DEG \
+    --deg-output-dir output/DEG \
+    --DEG-method both \
+    --DEG-p-adj-cutoff 0.01 \
+    
+    # GO Analysis
+    --go-input-dir data/GO \
+    --go-output-dir output/GO \
+    --go-pvalue-cutoff 0.005 \
+    --pathway-db KEGG \
+    --species mouse \
+    --go-qvalue-cutoff 0.01 \
+    --go-show-category 30 \
+    
+    # CellChat Analysis
+    --cellchat-input-dir data/cellchat \
+    --cellchat-output-dir output/cellchat \
+    --cellchat-type mean \
+    --cellchat-trim 0.2 \
+    --cellchat-search "ECM-Receptor" \
+    
+    # Size3ES Analysis
+    --size3es-input-dir data/size3es \
+    --size3es-output-dir output/size3es \
+    --size3es-months "8,13" \
+    --size3es-replicates "1,2" \
+    --size3es-control-group control \
+    --size3es-pvalue-cutoff 0.05 \
+    --size3es-effect-size-threshold 0.1 \
+    --size3es-multiple-testing-correction BH
 ```
 
-## Table of Contents
+## Parameters
 
-### Input Files from TrimNN
-- `motif_ids.csv`: Contains motif identifiers
+### General Options
+- `--run-only`: Specify analyses to run [default: all]
+  - Options: all, deg, go, cellchat, size3es
+  - Multiple values allowed (comma-separated)
+
+### Analysis-Specific Parameters
+
+#### 1. DEG Analysis
+- `--DEG-method`: Analysis method [default: both]
+  - Options: deseq2, wilcox, both
+- `--DEG-p-adj-cutoff`: Adjusted p-value cutoff [default: 0.05]
+  - Range: 0-1
+
+#### 2. GO Analysis
+- `--go-pvalue-cutoff`: P-value cutoff [default: 0.01]
+  - Range: 0-1
+- `--pathway-db`: Pathway database [default: Reactome]
+  - Options: Reactome, KEGG, GO
+- `--species`: Organism/species [default: mouse]
+  - Options: mouse, human
+- `--go-qvalue-cutoff`: Q-value cutoff [default: 0.05]
+  - Range: 0-1
+- `--go-show-category`: Categories to show [default: 20]
+  - Range: 1-100
+
+#### 3. CellChat Analysis
+- `--cellchat-type`: Communication probability type [default: truncatedMean]
+  - Options: truncatedMean, mean, median
+- `--cellchat-trim`: Trimming factor [default: 0.1]
+  - Range: 0-1
+- `--cellchat-search`: Search type [default: Secreted Signaling]
+  - Options: Secreted Signaling, ECM-Receptor, Cell-Cell Contact
+
+#### 4. Size3ES Analysis
+The Size3ES analysis examines cell type interactions and their effect sizes across different time points and replicates. It uses a combination of Fisher's exact test and Cramer's V to assess the significance and strength of cell type interactions.
+
+- `--size3es-months`: Months to analyze [default: 8,13]
+  - Options: 8, 13
+- `--size3es-replicates`: Replicates to use [default: 1,2]
+  - Options: 1, 2
+- `--size3es-control-group`: Control group name [default: control]
+- `--size3es-pvalue-cutoff`: P-value cutoff [default: 0.05]
+  - Range: 0-1
+  - Used for filtering significant interactions
+- `--size3es-effect-size-threshold`: Effect size threshold [default: 0.1]
+  - Range: 0-1
+  - Minimum Cramer's V value to consider an interaction meaningful
+- `--size3es-multiple-testing-correction`: Correction method [default: BH]
+  - Options: BH, bonferroni, holm, hochberg, none
+  - BH (Benjamini-Hochberg) recommended for most cases
+
+### Output Format
+The Size3ES analysis generates CSV files with the following columns:
+- `tri_celltype`: Cell type triplet (e.g., "Astro&CA1&CTX-Ex")
+- `occurrence_num`: Number of occurrences
+- `rank`: Interaction rank
+- `meta_p`: Combined p-value from Fisher's exact tests
+- `effect_size_1`: Effect size for first cell type
+- `effect_size_2`: Effect size for second cell type
+- `effect_size_3`: Effect size for third cell type
+
+## Input/Output Structure
+
+### Input Files
+- `motif_ids.csv`: Motif identifiers
 - `matrix_raw.txt`: Raw gene expression matrix
 - `cell_types.txt`: Cell type annotations
 
-### Pipeline Scripts
-
-The `run_pattern_analysis_pipeline.sh` executes the following scripts in sequence:
-
-#### 1. extract_motifs.py
-**Purpose**: Extracts cellular patterns (motifs) from spatial transcriptomics data.
-
-**Parameters**:
-- `--hop-distance`: Hop distance for motif extraction [default: 3, range: 1-10]
-
-**Outputs**:
-- `cell_type_matrix.txt`: Matrix of cell types in each pattern
-- `gene_expression_matrix.txt`: Gene expression values for each cell
-- `mtf&non-motif_label.txt`: Labels indicating if it's a motif (1) or non-motif (0)
-
-#### 2. DEG.r
-**Purpose**: Performs differential gene expression analysis between motifs and non-motifs.
-
-**Parameters**:
-- `--DEG-p-adj-cutoff`: Adjusted p-value cutoff [default: 0.05, range: 0-1]
-
-**Outputs**:
-- `output/DEG/cccm.csv`: CSV file containing statistics for each gene, including log2 fold change and p-values
-
-#### 3. extract_deg.py
-**Purpose**: Filters DEG results to identify significantly overexpressed genes.
-
-**Outputs**:
-- `output/deg_overexpressed/original/cccm.txt`: List of significant genes in original patterns
-- `output/deg_overexpressed/3hop/cccm.txt`: List of significant genes in 3-hop patterns
-
-#### 4. go_and_pathway.r
-**Purpose**: Conducts Gene Ontology (GO) and pathway analysis on differentially expressed genes.
-
-**Parameters**:
-- `--go-pvalue-cutoff`: P-value cutoff [default: 0.01, range: 0-1]
-- `--pathway-db`: Pathway database selection [default: Reactome, options: Reactome, KEGG, GO]
-- `--go-qvalue-cutoff`: Q-value cutoff [default: 0.05, range: 0-1]
-- `--go-ontology-types`: Comma-separated list of GO ontology types [default: BP,MF,CC, options: BP, MF, CC]
-- `--go-show-category`: Number of categories to show [default: 20, range: 1-100]
-
-**Outputs**:
-- `output/Go/original/cccm_BP.csv`: GO analysis results for Biological Processes
-- `output/Go/original/cccm_MF.csv`: GO analysis results for Molecular Functions
-- `output/Go/original/cccm_CC.csv`: GO analysis results for Cellular Components
-- `output/Go/3hop/cccm_BP.csv`: GO analysis results for 3-hop patterns
-- `output/pathway/original/cccm.csv`: Pathway analysis results
-- `output/pathway/3hop/cccm.csv`: Pathway analysis results for 3-hop patterns
-
-#### 5. generate_rank_files.py
-**Purpose**: Generates ranked lists of genes and patterns for downstream analysis.
-
-**Outputs**:
-- `original_rank.txt`: Ranked list of genes for original patterns
-- `3hop_rank.txt`: Ranked list of genes for 3-hop extended patterns
-- `original_pattern_rank.txt`: Ranked list of patterns for original analysis
-- `3hop_pattern_rank.txt`: Ranked list of patterns for 3-hop analysis
-
-#### 6. size3ES&P.r
-**Purpose**: Analyzes effect sizes and statistical significance of cell type interactions.
-
-**Parameters**:
-- `--size3es-months`: Comma-separated list of months [default: 8,13, options: 8, 13]
-- `--size3es-replicates`: Comma-separated list of replicates [default: 1,2, options: 1, 2]
-- `--size3es-control-group`: Control group name [default: control]
-- `--size3es-pvalue-cutoff`: P-value cutoff [default: 0.05, range: 0-1]
-- `--size3es-effect-size-threshold`: Effect size threshold [default: 0.1, range: 0-1]
-- `--size3es-multiple-testing-correction`: Multiple testing correction method [default: BH, options: BH, bonferroni, holm, hochberg, none]
-
-**Outputs**:
-- `effect_size/AD_8_control_1_tri_ES&P.csv`: Effect sizes and p-values for interactions in month 8, replicate 1
-- `effect_size/AD_8_control_2_tri_ES&P.csv`: Effect sizes and p-values for interactions in month 8, replicate 2
-- `effect_size/AD_13_control_1_tri_ES&P.csv`: Effect sizes and p-values for interactions in month 13, replicate 1
-- `effect_size/AD_13_control_2_tri_ES&P.csv`: Effect sizes and p-values for interactions in month 13, replicate 2
-
-#### 7. cellchat.r
-**Purpose**: Analyzes cell-cell communication using the CellChat package.
-
-**Parameters**:
-- `--cellchat-type`: Communication probability type [default: truncatedMean, options: truncatedMean, mean, median]
-- `--cellchat-trim`: Trimming factor [default: 0.1, range: 0-1]
-- `--cellchat-search`: Search type [default: Secreted Signaling, options: Secreted Signaling, ECM-Receptor, Cell-Cell Contact]
-
-**Outputs**:
-- Communication probability matrices and visualizations (specific output files may vary based on the analysis)
-
+### Output Directories
+Each analysis step has its own input and output directories:
+```
+project_root/
+├── data/                  # Input directories
+│   ├── motifs/
+│   ├── DEG/
+│   ├── GO/
+│   ├── cellchat/
+│   └── size3es/
+├── output/               # Output directories
+│   ├── motifs/
+│   ├── DEG/
+│   ├── GO/
+│   ├── cellchat/
+│   └── size3es/
+└── logs/                # Pipeline execution logs
+```

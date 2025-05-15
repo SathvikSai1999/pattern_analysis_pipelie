@@ -13,6 +13,7 @@ control_group <- c('control')
 p_value_cutoff <- 0.05
 effect_size_threshold <- 0.1
 multiple_testing_correction <- "BH"
+output_dir <- "output/size3es"
 
 # Parse arguments
 for (arg in args) {
@@ -28,6 +29,8 @@ for (arg in args) {
         effect_size_threshold <- as.numeric(sub("--effect-size-threshold=", "", arg))
     } else if (grepl("--multiple-testing-correction=", arg)) {
         multiple_testing_correction <- sub("--multiple-testing-correction=", "", arg)
+    } else if (grepl("--output-dir=", arg)) {
+        output_dir <- sub("--output-dir=", "", arg)
     }
 }
 
@@ -40,9 +43,9 @@ if (!dir.exists('result_rank')) {
     dir.create('result_rank')
 }
 
-# Create effect_size directory if it doesn't exist
-if (!dir.exists('effect_size')) {
-    dir.create('effect_size')
+# Create output directory if it doesn't exist
+if (!dir.exists(output_dir)) {
+    dir.create(output_dir, recursive = TRUE)
 }
 
 process_replicate <- function(m, c, r) {
@@ -63,10 +66,11 @@ process_replicate <- function(m, c, r) {
     }
     
     tryCatch({
-        data <- read.csv(tri_rank_file)
+        data <- read.csv(tri_rank_file, stringsAsFactors = FALSE)
         data <- data[order(data$tri_celltype),]
         
-        dictionary <- list()
+        # Initialize dictionary with ranks
+        dictionary <- setNames(data$rank, data$tri_celltype)
         
         # Process data in parallel
         results <- mclapply(data$tri_celltype, function(perm) {
@@ -85,22 +89,25 @@ process_replicate <- function(m, c, r) {
                 table_test <- matrix(0, nrow = 2, ncol = 2)
                 
                 for (tri in data$tri_celltype) {
-                    if (!(tri %in% names(dictionary))) {
-                        dictionary[[tri]] <- 0.5
-                    }
-                    if (dictionary[[tri]]==0) dictionary[[tri]] <- 0.5
+                    tri_cells <- strsplit(tri, "&", fixed = TRUE)[[1]]
                     
-                    removed_note <- sub(cell, "", tri, fixed = TRUE, ignore.case = FALSE)
-                    if (grepl(cell_1,removed_note)) {
-                        remove_second_note <- sub(cell_1, "", removed_note, fixed = TRUE, ignore.case = FALSE)
-                        if (grepl(cell_2,remove_second_note)) {
+                    # Check if cell is in the triplet
+                    if (cell %in% tri_cells) {
+                        # Check if cell_1 and cell_2 are in the remaining cells
+                        remaining_cells <- tri_cells[!tri_cells %in% cell]
+                        if (all(c(cell_1, cell_2) %in% remaining_cells)) {
                             table_test[1,1] <- table_test[1,1] + dictionary[[tri]]
                         }
                     }
-                    if (grepl(cell_1,removed_note)) {table_test[1,2] <- table_test[1,2] + dictionary[[tri]]}
-                    if (grepl(cell_2,removed_note)) {table_test[2,1] <- table_test[2,1] + dictionary[[tri]]}
+                    
+                    # Update other cells of the contingency table
+                    if (cell_1 %in% tri_cells) {table_test[1,2] <- table_test[1,2] + dictionary[[tri]]}
+                    if (cell_2 %in% tri_cells) {table_test[2,1] <- table_test[2,1] + dictionary[[tri]]}
                     table_test[2,2] <- table_test[2,2] + dictionary[[tri]]
                 }
+                
+                # Add small constant to avoid zero cells
+                table_test <- table_test + 0.5
                 
                 pvalue <- c(pvalue, fisher.test(table_test)$p.value)
                 effect_size[i] <- rcompanion::cramerV(table_test)
@@ -129,7 +136,7 @@ process_replicate <- function(m, c, r) {
             data$meta_p <- p.adjust(data$meta_p, method = multiple_testing_correction)
         }
         
-        file_path <- paste0('effect_size/AD_',m,'_control_',r,'_tri_ES&P.csv')
+        file_path <- file.path(output_dir, sprintf('AD_%d_control_%d_tri_ES&P.csv', m, r))
         write.csv(data, file = file_path, append = FALSE, row.names=FALSE)
         print(sprintf("Completed processing month %d, replicate %d", m, r))
         

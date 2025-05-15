@@ -1,22 +1,23 @@
 #!/bin/bash
 
-# Ensure the script continues running even if terminal closes
-# and set up proper environment handling
-if [ -z "$NOHUP_ACTIVE" ]; then
-    export NOHUP_ACTIVE=1
-    LOG_DIR="logs"
-    mkdir -p "$LOG_DIR"
-    TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-    LOG_FILE="$LOG_DIR/pipeline_${TIMESTAMP}.log"
-    
-    # Run the script in background but pipe output to both log file and terminal
-    exec "$0" "$@" 2>&1 | tee "$LOG_FILE" &
-    echo "Pipeline started in background. Progress will be shown in terminal and saved to $LOG_FILE"
-    exit 0
-fi
-
 # Default parameter values
-HOP_DISTANCE="3"                    # Default hop distance for motif extraction
+RUN_ONLY="all"                    # Default to running all steps
+VERSION="1.0.0"                   # Pipeline version
+
+# Input directories
+MOTIF_INPUT_DIR="data/motifs"     # Input directory for motif extraction
+DEG_INPUT_DIR="data/DEG"          # Input directory for DEG analysis
+GO_INPUT_DIR="data/GO"            # Input directory for GO analysis
+CELLCHAT_INPUT_DIR="data/cellchat" # Input directory for CellChat
+SIZE3ES_INPUT_DIR="data/size3es"  # Input directory for Size3ES
+
+# Output directories
+MOTIF_OUTPUT_DIR="output/motifs"     # Output directory for motifs
+DEG_OUTPUT_DIR="output/DEG"          # Output directory for DEG
+GO_OUTPUT_DIR="output/GO"            # Output directory for GO
+CELLCHAT_OUTPUT_DIR="output/cellchat" # Output directory for CellChat
+SIZE3ES_OUTPUT_DIR="output/size3es"   # Output directory for Size3ES
+
 DEG_P_ADJ_CUTOFF="0.05"            # Default adjusted p-value cutoff for DEG analysis
 GO_PVALUE_CUTOFF="0.01"            # Default p-value cutoff for GO analysis
 PATHWAY_DB="Reactome"              # Default pathway database
@@ -24,7 +25,6 @@ CELLCHAT_TYPE="truncatedMean"      # Default CellChat communication probability 
 CELLCHAT_TRIM="0.1"               # Default CellChat trimming factor
 CELLCHAT_SEARCH="Secreted Signaling" # Default CellChat search type
 GO_QVALUE_CUTOFF="0.05"           # Default q-value cutoff for GO analysis
-GO_ONTOLOGY_TYPES="BP,MF,CC"      # Default GO ontology types
 GO_SHOW_CATEGORY="20"             # Default number of categories to show in GO plots
 SIZE3ES_MONTHS="8,13"             # Default months for size analysis
 SIZE3ES_REPLICATES="1,2"          # Default replicates for size analysis
@@ -71,36 +71,175 @@ validate_list() {
     done
 }
 
-# Function to display usage
+# Function to display usage with detailed examples
 usage() {
-    echo "Usage: $0 [options]"
-    echo "Options:"
-    echo "  --hop-distance VALUE        Hop distance for motif extraction [default: 3]"
-    echo "  --DEG-p-adj-cutoff VALUE   Adjusted p-value cutoff for DEG analysis [default: 0.05]"
-    echo "  --go-pvalue-cutoff VALUE   P-value cutoff for GO analysis [default: 0.01]"
-    echo "  --pathway-db VALUE         Pathway database selection [default: Reactome]"
-    echo "  --cellchat-type TYPE       CellChat communication probability type [default: truncatedMean]"
-    echo "  --cellchat-trim VALUE      CellChat trimming factor [default: 0.1]"
-    echo "  --cellchat-search VALUE    CellChat search type [default: Secreted Signaling]"
-    echo "  --go-qvalue-cutoff VALUE   Q-value cutoff for GO analysis [default: 0.05]"
-    echo "  --go-ontology-types LIST   Comma-separated list of GO ontology types [default: BP,MF,CC]"
-    echo "  --go-show-category VALUE   Number of categories to show in GO plots [default: 20]"
-    echo "  --size3es-months LIST      Comma-separated list of months [default: 8,13]"
-    echo "  --size3es-replicates LIST  Comma-separated list of replicates [default: 1,2]"
+    echo "Pattern Analysis Pipeline - Advanced Usage Guide"
+    echo ""
+    echo "Basic Usage:"
+    echo "  $0 [options]"
+    echo ""
+    echo "Examples:"
+    echo "1. Basic Run with Default Parameters:"
+    echo "    $0"
+    echo ""
+    echo "2. Run Specific Analysis Steps:"
+    echo "    $0 --run-only deg,go"
+    echo ""
+    echo "3. Full Pipeline with Custom Parameters:"
+    echo "    $0 \\"
+    echo "      --motif-input-dir /path/to/motif/input \\"
+    echo "      --motif-output-dir /path/to/motif/output \\"
+    echo "      --deg-input-dir /path/to/deg/input \\"
+    echo "      --deg-output-dir /path/to/deg/output \\"
+    echo "      --go-input-dir /path/to/go/input \\"
+    echo "      --go-output-dir /path/to/go/output \\"
+    echo "      --cellchat-input-dir /path/to/cellchat/input \\"
+    echo "      --cellchat-output-dir /path/to/cellchat/output \\"
+    echo "      --size3es-input-dir /path/to/size3es/input \\"
+    echo "      --size3es-output-dir /path/to/size3es/output"
+    echo ""
+    echo "4. Advanced DEG Analysis:"
+    echo "    $0 --run-only deg \\"
+    echo "      --deg-input-dir /path/to/deg/input \\"
+    echo "      --deg-output-dir /path/to/deg/output \\"
+    echo "      --DEG-method deseq2 \\"
+    echo "      --DEG-p-adj-cutoff 0.01 \\"
+    echo "      --log2fc-cutoff 1.5"
+    echo ""
+    echo "5. Advanced GO Analysis:"
+    echo "    $0 --run-only go \\"
+    echo "      --go-input-dir /path/to/go/input \\"
+    echo "      --go-output-dir /path/to/go/output \\"
+    echo "      --go-pvalue-cutoff 0.005 \\"
+    echo "      --pathway-db KEGG \\"
+    echo "      --go-qvalue-cutoff 0.01 \\"
+    echo "      --go-show-category 30"
+    echo ""
+    echo "6. Advanced CellChat Analysis:"
+    echo "    $0 --run-only cellchat \\"
+    echo "      --cellchat-input-dir /path/to/cellchat/input \\"
+    echo "      --cellchat-output-dir /path/to/cellchat/output \\"
+    echo "      --cellchat-type mean \\"
+    echo "      --cellchat-trim 0.2 \\"
+    echo "      --cellchat-search 'ECM-Receptor'"
+    echo ""
+    echo "7. Advanced Size3ES Analysis:"
+    echo "    $0 --run-only size3es \\"
+    echo "      --size3es-input-dir /path/to/size3es/input \\"
+    echo "      --size3es-output-dir /path/to/size3es/output \\"
+    echo "      --size3es-months '8,13' \\"
+    echo "      --size3es-replicates '1,2' \\"
+    echo "      --size3es-control-group control \\"
+    echo "      --size3es-pvalue-cutoff 0.01 \\"
+    echo "      --size3es-effect-size-threshold 0.15 \\"
+    echo "      --size3es-multiple-testing-correction bonferroni"
+    echo ""
+    echo "Available Options:"
+    echo ""
+    echo "General Options:"
+    echo "  --run-only VALUE           Specify which analyses to run [default: all]"
+    echo "                             Options: all, deg, go, cellchat, size3es"
+    echo "                             Multiple values allowed, comma-separated"
+    echo "  --version                  Display pipeline version"
+    echo ""
+    echo "Directory Options:"
+    echo "  --motif-input-dir PATH     Input directory for motif extraction"
+    echo "  --motif-output-dir PATH    Output directory for motif extraction"
+    echo "  --deg-input-dir PATH       Input directory for DEG analysis"
+    echo "  --deg-output-dir PATH      Output directory for DEG analysis"
+    echo "  --go-input-dir PATH        Input directory for GO analysis"
+    echo "  --go-output-dir PATH       Output directory for GO analysis"
+    echo "  --cellchat-input-dir PATH  Input directory for CellChat analysis"
+    echo "  --cellchat-output-dir PATH Output directory for CellChat analysis"
+    echo "  --size3es-input-dir PATH   Input directory for Size3ES analysis"
+    echo "  --size3es-output-dir PATH  Output directory for Size3ES analysis"
+    echo ""
+    echo "DEG Analysis Options:"
+    echo "  --DEG-method VALUE         Analysis method [default: both]"
+    echo "                             Options: deseq2, wilcox, both"
+    echo "  --DEG-p-adj-cutoff VALUE   Adjusted p-value cutoff [default: 0.05]"
+    echo "  --log2fc-cutoff VALUE      Log2 fold change cutoff [default: 1.0]"
+    echo ""
+    echo "GO Analysis Options:"
+    echo "  --go-pvalue-cutoff VALUE   P-value cutoff [default: 0.01]"
+    echo "  --pathway-db VALUE         Pathway database [default: Reactome]"
+    echo "                             Options: Reactome, KEGG, GO"
+    echo "  --go-qvalue-cutoff VALUE   Q-value cutoff [default: 0.05]"
+    echo "  --go-show-category VALUE   Number of categories to show [default: 20]"
+    echo ""
+    echo "CellChat Options:"
+    echo "  --cellchat-type VALUE      Communication probability type [default: truncatedMean]"
+    echo "                             Options: truncatedMean, mean, median"
+    echo "  --cellchat-trim VALUE      Trimming factor [default: 0.1]"
+    echo "  --cellchat-search VALUE    Search type [default: Secreted Signaling]"
+    echo "                             Options: Secreted Signaling, ECM-Receptor, Cell-Cell Contact"
+    echo ""
+    echo "Size3ES Options:"
+    echo "  --size3es-months VALUE     Comma-separated list of months [default: 8,13]"
+    echo "  --size3es-replicates VALUE Comma-separated list of replicates [default: 1,2]"
     echo "  --size3es-control-group VALUE Control group name [default: control]"
     echo "  --size3es-pvalue-cutoff VALUE P-value cutoff [default: 0.05]"
     echo "  --size3es-effect-size-threshold VALUE Effect size threshold [default: 0.1]"
-    echo "  --size3es-multiple-testing-correction VALUE Multiple testing correction method [default: BH]"
-    echo "  -h, --help                 Display this help message"
+    echo "  --size3es-multiple-testing-correction VALUE"
+    echo "                             Multiple testing correction method [default: BH]"
+    echo "                             Options: BH, bonferroni, holm, hochberg, none"
+    echo ""
+    echo "For detailed documentation, please refer to the README.md file."
     exit 1
+}
+
+# Function to display version
+show_version() {
+    echo "Pattern Analysis Pipeline version $VERSION"
+    exit 0
 }
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --hop-distance)
-            HOP_DISTANCE="$2"
-            validate_numeric "hop-distance" "$HOP_DISTANCE" 1 10
+        --run-only)
+            RUN_ONLY="$2"
+            validate_list "run-only" "$RUN_ONLY" "all deg go cellchat size3es"
+            shift 2
+            ;;
+        --motif-input-dir)
+            MOTIF_INPUT_DIR="$2"
+            shift 2
+            ;;
+        --motif-output-dir)
+            MOTIF_OUTPUT_DIR="$2"
+            shift 2
+            ;;
+        --deg-input-dir)
+            DEG_INPUT_DIR="$2"
+            shift 2
+            ;;
+        --deg-output-dir)
+            DEG_OUTPUT_DIR="$2"
+            shift 2
+            ;;
+        --go-input-dir)
+            GO_INPUT_DIR="$2"
+            shift 2
+            ;;
+        --go-output-dir)
+            GO_OUTPUT_DIR="$2"
+            shift 2
+            ;;
+        --cellchat-input-dir)
+            CELLCHAT_INPUT_DIR="$2"
+            shift 2
+            ;;
+        --cellchat-output-dir)
+            CELLCHAT_OUTPUT_DIR="$2"
+            shift 2
+            ;;
+        --size3es-input-dir)
+            SIZE3ES_INPUT_DIR="$2"
+            shift 2
+            ;;
+        --size3es-output-dir)
+            SIZE3ES_OUTPUT_DIR="$2"
             shift 2
             ;;
         --DEG-p-adj-cutoff)
@@ -138,11 +277,6 @@ while [[ $# -gt 0 ]]; do
             validate_numeric "go-qvalue-cutoff" "$GO_QVALUE_CUTOFF" 0 1
             shift 2
             ;;
-        --go-ontology-types)
-            GO_ONTOLOGY_TYPES="$2"
-            validate_list "go-ontology-types" "$GO_ONTOLOGY_TYPES" "BP MF CC"
-            shift 2
-            ;;
         --go-show-category)
             GO_SHOW_CATEGORY="$2"
             validate_numeric "go-show-category" "$GO_SHOW_CATEGORY" 1 100
@@ -178,6 +312,9 @@ while [[ $# -gt 0 ]]; do
             validate_list "size3es-multiple-testing-correction" "$SIZE3ES_MULTIPLE_TESTING_CORRECTION" "BH bonferroni holm hochberg none"
             shift 2
             ;;
+        --version)
+            show_version
+            ;;
         -h|--help)
             usage
             ;;
@@ -191,61 +328,24 @@ done
 # Ensure conda environment activation works in detached state
 source "$(conda info --base)/etc/profile.d/conda.sh"
 
-# Set up logging
-LOG_DIR="logs"
-mkdir -p "$LOG_DIR"
-LOG_FILE="$LOG_DIR/pipeline_$(date +%Y%m%d_%H%M%S).log"
-
-# Function to log messages
-log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
-}
-
-# Function to run a step with error handling
-run_step() {
-    local step_name=$1
-    local command=$2
-    local log_file="$LOG_DIR/${step_name}_$(date +%Y%m%d_%H%M%S).log"
-    
-    log "Starting $step_name..."
-    log "Command: $command"
-    
-    if eval "$command" > "$log_file" 2>&1; then
-        log "$step_name completed successfully"
-        return 0
-    else
-        log "Error in $step_name. Check $log_file for details"
-        return 1
-    fi
-}
-
 # Ensure correct environment is activated
-log "Activating 'trimnn' environment..."
+echo "Activating 'trimnn' environment..."
 conda activate trimnn
 
 # Get the Python interpreter from the trimnn environment
 PYTHON_INTERPRETER=$(conda run -n trimnn which python)
-log "Using Python interpreter: $PYTHON_INTERPRETER"
+echo "Using Python interpreter: $PYTHON_INTERPRETER"
 
-log "==================================="
-log "Starting TrimNN Analysis Pipeline"
-log "==================================="
-
-# Set number of parallel jobs (adjust based on your system)
-MAX_JOBS=4
+echo "==================================="
+echo "Starting TrimNN Analysis Pipeline"
+echo "==================================="
 
 # Build command strings with parameters
-MOTIF_CMD="$PYTHON_INTERPRETER extract_motifs.py"
-if [ ! -z "$HOP_DISTANCE" ]; then
-    MOTIF_CMD="$MOTIF_CMD --hop-distance=$HOP_DISTANCE"
-fi
+MOTIF_CMD="$PYTHON_INTERPRETER extract_motifs.py --input-dir $MOTIF_INPUT_DIR --output-dir $MOTIF_OUTPUT_DIR"
 
-DEG_CMD="Rscript DEG.r"
-if [ ! -z "$DEG_P_ADJ_CUTOFF" ]; then
-    DEG_CMD="$DEG_CMD --p-adj-cutoff=$DEG_P_ADJ_CUTOFF"
-fi
+DEG_CMD="Rscript DEG_wrapper.r --DEG-method both --DEG-p-adj-cutoff ${DEG_P_ADJ_CUTOFF:-0.01} --deg-input-dir ${DEG_INPUT_DIR} --output_dir ${DEG_OUTPUT_DIR}"
 
-GO_CMD="Rscript go_and_pathway.r"
+GO_CMD="Rscript go_and_pathway.r --input-dir $GO_INPUT_DIR --output-dir $GO_OUTPUT_DIR"
 if [ ! -z "$GO_PVALUE_CUTOFF" ]; then
     GO_CMD="$GO_CMD --pvalue-cutoff=$GO_PVALUE_CUTOFF"
 fi
@@ -255,14 +355,11 @@ fi
 if [ ! -z "$GO_QVALUE_CUTOFF" ]; then
     GO_CMD="$GO_CMD --qvalue-cutoff=$GO_QVALUE_CUTOFF"
 fi
-if [ ! -z "$GO_ONTOLOGY_TYPES" ]; then
-    GO_CMD="$GO_CMD --ontology-types=$GO_ONTOLOGY_TYPES"
-fi
 if [ ! -z "$GO_SHOW_CATEGORY" ]; then
     GO_CMD="$GO_CMD --show-category=$GO_SHOW_CATEGORY"
 fi
 
-CELLCHAT_CMD="Rscript cellchat.r"
+CELLCHAT_CMD="Rscript cellchat.r --input-dir $CELLCHAT_INPUT_DIR --output-dir $CELLCHAT_OUTPUT_DIR"
 if [ ! -z "$CELLCHAT_TYPE" ]; then
     CELLCHAT_CMD="$CELLCHAT_CMD --type=$CELLCHAT_TYPE"
 fi
@@ -273,7 +370,7 @@ if [ ! -z "$CELLCHAT_SEARCH" ]; then
     CELLCHAT_CMD="$CELLCHAT_CMD --search=$CELLCHAT_SEARCH"
 fi
 
-SIZE3ES_CMD="Rscript 'size3ES&P.r'"
+SIZE3ES_CMD="Rscript 'size3ES&P.r' --input-dir $SIZE3ES_INPUT_DIR --output-dir $SIZE3ES_OUTPUT_DIR"
 if [ ! -z "$SIZE3ES_MONTHS" ]; then
     SIZE3ES_CMD="$SIZE3ES_CMD --months=$SIZE3ES_MONTHS"
 fi
@@ -293,28 +390,46 @@ if [ ! -z "$SIZE3ES_MULTIPLE_TESTING_CORRECTION" ]; then
     SIZE3ES_CMD="$SIZE3ES_CMD --multiple-testing-correction=$SIZE3ES_MULTIPLE_TESTING_CORRECTION"
 fi
 
-# Run steps in parallel where possible
-log "Running parallel steps..."
-(
-    run_step "extract_motifs" "$MOTIF_CMD" &
-    run_step "DEG" "$DEG_CMD" &
-    wait
-) | tee -a "$LOG_FILE"
+# Main pipeline execution
+echo "Starting pipeline execution..."
 
-# Run dependent steps sequentially
-log "Running sequential steps..."
-run_step "extract_deg" "python extract_deg.py"
-run_step "go_and_pathway" "$GO_CMD"
-run_step "cellchat" "$CELLCHAT_CMD"
+# Run DEG analysis if requested
+if [[ "$RUN_ONLY" == "all" || "$RUN_ONLY" == "deg" ]]; then
+    echo "Running DEG analysis..."
+    if ! eval "$DEG_CMD"; then
+        echo "DEG analysis failed."
+        exit 1
+    fi
+fi
 
-# Generate rank files after go_and_pathway and cellchat, but before size3ES&P
-log "Generating rank files..."
-run_step "generate_rank_files" "$PYTHON_INTERPRETER generate_rank_files.py"
+# Run GO analysis if requested
+if [[ "$RUN_ONLY" == "all" || "$RUN_ONLY" == "go" ]]; then
+    echo "Running GO analysis..."
+    if ! eval "$GO_CMD"; then
+        echo "GO analysis failed."
+        exit 1
+    fi
+fi
 
-run_step "size3ES_and_P" "$SIZE3ES_CMD"
+# Run CellChat analysis if requested
+if [[ "$RUN_ONLY" == "all" || "$RUN_ONLY" == "cellchat" ]]; then
+    echo "Running CellChat analysis..."
+    if ! eval "$CELLCHAT_CMD"; then
+        echo "CellChat analysis failed."
+        exit 1
+    fi
+fi
 
-log "==============================="
-log "Pipeline execution completed!"
-log "Check $LOG_DIR for detailed logs"
-log "==============================="
+# Run Size3ES analysis if requested
+if [[ "$RUN_ONLY" == "all" || "$RUN_ONLY" == "size3es" ]]; then
+    echo "Running Size3ES analysis..."
+    if ! eval "$SIZE3ES_CMD"; then
+        echo "Size3ES analysis failed."
+        exit 1
+    fi
+fi
+
+echo "==============================="
+echo "Pipeline execution completed!"
+echo "==============================="
 
