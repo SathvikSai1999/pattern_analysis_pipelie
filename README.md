@@ -11,6 +11,22 @@ The pipeline performs the following analyses:
 4. CellChat analysis for cell-cell communication
 5. Size and Effect Size analysis (Size3ES)
 
+## Dataset Specifications
+
+The pipeline is optimized for analyzing spatial transcriptomics data with the following specifications:
+
+### Sample Information
+- **Species**: Mouse (transgenic AD model)
+- **Age Groups**: 8-month-old and 13-month-old
+- **Conditions**: AD vs. Wild-type (Control)
+- **Replicates**: 2 replicates each for AD and control at both timepoints
+
+### Data Structure
+- Each sample contains spatial gene expression data
+- Cell type annotations are provided for each cell
+- Expression matrices are in sparse format
+- Raw count data is used for differential expression analysis
+
 ## Installation
 
 ### Prerequisites
