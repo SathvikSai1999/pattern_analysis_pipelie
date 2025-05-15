@@ -98,7 +98,7 @@ chmod +x *.py *.r *.sh
     --size3es-output-dir output/size3es \
     --size3es-months "control8,sample8,control13,sample13" \
     --size3es-replicates "1,2" \
-    --size3es-control-group control \
+    --size3es-control-group "control_8,control_13" \
     --size3es-pvalue-cutoff 0.05 \
     --size3es-effect-size-threshold 0.1 \
     --size3es-multiple-testing-correction BH
@@ -192,7 +192,9 @@ The Size3ES analysis examines cell type interactions and their effect sizes acro
   - Options: control8, sample8, control13, sample13
 - `--size3es-replicates`: Replicates to use [default: 1,2]
   - Options: 1, 2
-- `--size3es-control-group`: Control group name [default: control]
+- `--size3es-control-group`: Control group name [default: control_8,control_13]
+  - Options: control_8, control_13
+  - Use underscores to separate control and time point
 - `--size3es-pvalue-cutoff`: P-value cutoff [default: 0.05]
   - Range: 0-1
   - Used for filtering significant interactions
