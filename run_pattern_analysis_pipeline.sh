@@ -26,12 +26,14 @@ CELLCHAT_TRIM="0.1"               # Default CellChat trimming factor
 CELLCHAT_SEARCH="Secreted Signaling" # Default CellChat search type
 GO_QVALUE_CUTOFF="0.05"           # Default q-value cutoff for GO analysis
 GO_SHOW_CATEGORY="20"             # Default number of categories to show in GO plots
-SIZE3ES_MONTHS="8,13"             # Default months for size analysis
-SIZE3ES_REPLICATES="1,2"          # Default replicates for size analysis
-SIZE3ES_CONTROL_GROUP="control"    # Default control group
-SIZE3ES_PVALUE_CUTOFF="0.05"      # Default p-value cutoff for size analysis
-SIZE3ES_EFFECT_SIZE_THRESHOLD="0.1" # Default effect size threshold
+SIZE3ES_TIMEPOINTS="8,13"             # Default timepoints for size analysis
+SIZE3ES_CONTROL_GROUPS="control_8,control_13" # Default control groups
+SIZE3ES_SAMPLE_GROUPS="sample_8,sample_13"   # Default sample groups
+SIZE3ES_REPLICATES="1,2"              # Default replicates for size analysis
+SIZE3ES_PVALUE_CUTOFF="0.05"          # Default p-value cutoff for size analysis
+SIZE3ES_EFFECT_SIZE_THRESHOLD="0.1"    # Default effect size threshold
 SIZE3ES_MULTIPLE_TESTING_CORRECTION="BH" # Default multiple testing correction method
+DEG_METHOD="both"                # Default DEG method
 
 # Function to validate numeric parameters
 validate_numeric() {
@@ -127,9 +129,10 @@ usage() {
     echo "    $0 --run-only size3es \\"
     echo "      --size3es-input-dir /path/to/size3es/input \\"
     echo "      --size3es-output-dir /path/to/size3es/output \\"
-    echo "      --size3es-months '8,13' \\"
+    echo "      --size3es-timepoints '8,13' \\"
+    echo "      --size3es-control-groups 'control_8,control_13' \\"
+    echo "      --size3es-sample-groups 'sample_8,sample_13' \\"
     echo "      --size3es-replicates '1,2' \\"
-    echo "      --size3es-control-group control \\"
     echo "      --size3es-pvalue-cutoff 0.01 \\"
     echo "      --size3es-effect-size-threshold 0.15 \\"
     echo "      --size3es-multiple-testing-correction bonferroni"
@@ -175,9 +178,10 @@ usage() {
     echo "                             Options: Secreted Signaling, ECM-Receptor, Cell-Cell Contact"
     echo ""
     echo "Size3ES Options:"
-    echo "  --size3es-months VALUE     Comma-separated list of months [default: 8,13]"
+    echo "  --size3es-timepoints VALUE Comma-separated list of timepoints [default: 8,13]"
+    echo "  --size3es-control-groups VALUE Comma-separated list of control groups [default: control_8,control_13]"
+    echo "  --size3es-sample-groups VALUE Comma-separated list of sample groups [default: sample_8,sample_13]"
     echo "  --size3es-replicates VALUE Comma-separated list of replicates [default: 1,2]"
-    echo "  --size3es-control-group VALUE Control group name [default: control]"
     echo "  --size3es-pvalue-cutoff VALUE P-value cutoff [default: 0.05]"
     echo "  --size3es-effect-size-threshold VALUE Effect size threshold [default: 0.1]"
     echo "  --size3es-multiple-testing-correction VALUE"
@@ -247,6 +251,11 @@ while [[ $# -gt 0 ]]; do
             validate_numeric "DEG-p-adj-cutoff" "$DEG_P_ADJ_CUTOFF" 0 1
             shift 2
             ;;
+        --DEG-method)
+            DEG_METHOD="$2"
+            validate_list "DEG-method" "$DEG_METHOD" "deseq2 wilcox both"
+            shift 2
+            ;;
         --go-pvalue-cutoff)
             GO_PVALUE_CUTOFF="$2"
             validate_numeric "go-pvalue-cutoff" "$GO_PVALUE_CUTOFF" 0 1
@@ -282,34 +291,32 @@ while [[ $# -gt 0 ]]; do
             validate_numeric "go-show-category" "$GO_SHOW_CATEGORY" 1 100
             shift 2
             ;;
-        --size3es-months)
-            SIZE3ES_MONTHS="$2"
-            validate_list "size3es-months" "$SIZE3ES_MONTHS" "8 13"
+        --size3es-timepoints)
+            SIZE3ES_TIMEPOINTS="$2"
+            shift 2
+            ;;
+        --size3es-control-groups)
+            SIZE3ES_CONTROL_GROUPS="$2"
+            shift 2
+            ;;
+        --size3es-sample-groups)
+            SIZE3ES_SAMPLE_GROUPS="$2"
             shift 2
             ;;
         --size3es-replicates)
             SIZE3ES_REPLICATES="$2"
-            validate_list "size3es-replicates" "$SIZE3ES_REPLICATES" "1 2"
-            shift 2
-            ;;
-        --size3es-control-group)
-            SIZE3ES_CONTROL_GROUP="$2"
-            validate_list "size3es-control-group" "$SIZE3ES_CONTROL_GROUP" "control"
             shift 2
             ;;
         --size3es-pvalue-cutoff)
             SIZE3ES_PVALUE_CUTOFF="$2"
-            validate_numeric "size3es-pvalue-cutoff" "$SIZE3ES_PVALUE_CUTOFF" 0 1
             shift 2
             ;;
         --size3es-effect-size-threshold)
             SIZE3ES_EFFECT_SIZE_THRESHOLD="$2"
-            validate_numeric "size3es-effect-size-threshold" "$SIZE3ES_EFFECT_SIZE_THRESHOLD" 0 1
             shift 2
             ;;
         --size3es-multiple-testing-correction)
             SIZE3ES_MULTIPLE_TESTING_CORRECTION="$2"
-            validate_list "size3es-multiple-testing-correction" "$SIZE3ES_MULTIPLE_TESTING_CORRECTION" "BH bonferroni holm hochberg none"
             shift 2
             ;;
         --version)
@@ -343,7 +350,7 @@ echo "==================================="
 # Build command strings with parameters
 MOTIF_CMD="$PYTHON_INTERPRETER extract_motifs.py --input-dir $MOTIF_INPUT_DIR --output-dir $MOTIF_OUTPUT_DIR"
 
-DEG_CMD="Rscript DEG_wrapper.r --DEG-method both --DEG-p-adj-cutoff ${DEG_P_ADJ_CUTOFF:-0.01} --deg-input-dir ${DEG_INPUT_DIR} --output_dir ${DEG_OUTPUT_DIR}"
+DEG_CMD="Rscript DEG_wrapper.r --DEG-method ${DEG_METHOD:-both} --DEG-p-adj-cutoff ${DEG_P_ADJ_CUTOFF:-0.01} --deg-input-dir ${DEG_INPUT_DIR} --output_dir ${DEG_OUTPUT_DIR}"
 
 GO_CMD="Rscript go_and_pathway.r --input-dir $GO_INPUT_DIR --output-dir $GO_OUTPUT_DIR"
 if [ ! -z "$GO_PVALUE_CUTOFF" ]; then
@@ -371,23 +378,26 @@ if [ ! -z "$CELLCHAT_SEARCH" ]; then
 fi
 
 SIZE3ES_CMD="Rscript 'size3ES&P.r' --input-dir $SIZE3ES_INPUT_DIR --output-dir $SIZE3ES_OUTPUT_DIR"
-if [ ! -z "$SIZE3ES_MONTHS" ]; then
-    SIZE3ES_CMD="$SIZE3ES_CMD --months=$SIZE3ES_MONTHS"
+if [ ! -z "$SIZE3ES_TIMEPOINTS" ]; then
+    SIZE3ES_CMD="$SIZE3ES_CMD --size3es-timepoints=$SIZE3ES_TIMEPOINTS"
+fi
+if [ ! -z "$SIZE3ES_CONTROL_GROUPS" ]; then
+    SIZE3ES_CMD="$SIZE3ES_CMD --size3es-control-groups=$SIZE3ES_CONTROL_GROUPS"
+fi
+if [ ! -z "$SIZE3ES_SAMPLE_GROUPS" ]; then
+    SIZE3ES_CMD="$SIZE3ES_CMD --size3es-sample-groups=$SIZE3ES_SAMPLE_GROUPS"
 fi
 if [ ! -z "$SIZE3ES_REPLICATES" ]; then
-    SIZE3ES_CMD="$SIZE3ES_CMD --replicates=$SIZE3ES_REPLICATES"
-fi
-if [ ! -z "$SIZE3ES_CONTROL_GROUP" ]; then
-    SIZE3ES_CMD="$SIZE3ES_CMD --control-group=$SIZE3ES_CONTROL_GROUP"
+    SIZE3ES_CMD="$SIZE3ES_CMD --size3es-replicates=$SIZE3ES_REPLICATES"
 fi
 if [ ! -z "$SIZE3ES_PVALUE_CUTOFF" ]; then
-    SIZE3ES_CMD="$SIZE3ES_CMD --p-value-cutoff=$SIZE3ES_PVALUE_CUTOFF"
+    SIZE3ES_CMD="$SIZE3ES_CMD --size3es-pvalue-cutoff=$SIZE3ES_PVALUE_CUTOFF"
 fi
 if [ ! -z "$SIZE3ES_EFFECT_SIZE_THRESHOLD" ]; then
-    SIZE3ES_CMD="$SIZE3ES_CMD --effect-size-threshold=$SIZE3ES_EFFECT_SIZE_THRESHOLD"
+    SIZE3ES_CMD="$SIZE3ES_CMD --size3es-effect-size-threshold=$SIZE3ES_EFFECT_SIZE_THRESHOLD"
 fi
 if [ ! -z "$SIZE3ES_MULTIPLE_TESTING_CORRECTION" ]; then
-    SIZE3ES_CMD="$SIZE3ES_CMD --multiple-testing-correction=$SIZE3ES_MULTIPLE_TESTING_CORRECTION"
+    SIZE3ES_CMD="$SIZE3ES_CMD --size3es-multiple-testing-correction=$SIZE3ES_MULTIPLE_TESTING_CORRECTION"
 fi
 
 # Main pipeline execution
