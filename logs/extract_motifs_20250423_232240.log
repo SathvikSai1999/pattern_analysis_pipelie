@@ -1,4 +1,0 @@
-Traceback (most recent call last):
-  File "/Users/sathviksai/Desktop/Trimnn/pattern_analysis_pipelie/extract_motifs.py", line 1, in <module>
-    import pandas as pd
-ModuleNotFoundError: No module named 'pandas'
