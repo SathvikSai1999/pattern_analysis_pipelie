@@ -98,6 +98,52 @@ chmod +x *.py *.r *.sh
 #### 1. DEG Analysis
 - `--DEG-method`: Analysis method [default: both]
   - Options: deseq2, wilcox, both
+  - Multiple values allowed (comma-separated)
+
+  **Example Usage Cases:**
+
+  1. **DESeq2 Method** (Recommended for bulk RNA-seq and large single-cell datasets):
+     ```bash
+     ./run_pattern_analysis_pipeline.sh \
+         --run-only deg \
+         --DEG-method deseq2 \
+         --deg-input-dir data/DEG \
+         --deg-output-dir output/DEG \
+         --DEG-p-adj-cutoff 0.01
+     ```
+     - Uses negative binomial model
+     - Accounts for biological variation
+     - Best for datasets with multiple replicates
+     - Output: CSV files with log2FoldChange, p-value, and adjusted p-value
+
+  2. **Wilcoxon Method** (Recommended for small datasets or when data is not normally distributed):
+     ```bash
+     ./run_pattern_analysis_pipeline.sh \
+         --run-only deg \
+         --DEG-method wilcox \
+         --deg-input-dir data/DEG \
+         --deg-output-dir output/DEG \
+         --DEG-p-adj-cutoff 0.01
+     ```
+     - Non-parametric test
+     - No assumption of normal distribution
+     - Good for small sample sizes
+     - Output: CSV files with fold change and p-values
+
+  3. **Both Methods** (Recommended for validation and comparison):
+     ```bash
+     ./run_pattern_analysis_pipeline.sh \
+         --run-only deg \
+         --DEG-method both \
+         --deg-input-dir data/DEG \
+         --deg-output-dir output/DEG \
+         --DEG-p-adj-cutoff 0.01
+     ```
+     - Runs both DESeq2 and Wilcoxon analyses
+     - Allows comparison of results
+     - Useful for method validation
+     - Output: Separate CSV files for each method
+
 - `--DEG-p-adj-cutoff`: Adjusted p-value cutoff [default: 0.05]
   - Range: 0-1
 
