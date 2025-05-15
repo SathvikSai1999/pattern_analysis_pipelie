@@ -23,6 +23,16 @@ The pipeline is optimized for analyzing spatial transcriptomics data with the fo
 - **Conditions**: AD vs. Wild-type (Control)
 - **Replicates**: 2 replicates each for AD and control at both timepoints
 
+### Replicate Structure
+| Time Point | Condition | Number of Replicates |
+|------------|-----------|---------------------|
+| 8 months old | AD | 2 |
+| | Control | 2 |
+| 13 months old | AD | 2 |
+| | Control | 2 |
+
+Each replicate is labeled with an underscore and number (e.g., control_8_1, control_8_2, sample_8_1, sample_8_2).
+
 ### Data Structure
 - Each sample contains spatial gene expression data
 - Cell type annotations are provided for each cell
@@ -192,6 +202,9 @@ The Size3ES analysis examines cell type interactions and their effect sizes acro
   - Options: control_8, sample_8, control_13, sample_13
 - `--size3es-replicates`: Replicates to use [default: 1,2]
   - Options: 1, 2
+  - Specifies which biological replicates to include in the analysis
+  - Using both replicates (1,2) is recommended for robust results
+  - Example: control_8_1, control_8_2, sample_8_1, sample_8_2
 - `--size3es-control-group`: Control group name [default: control_8,control_13]
   - Options: control_8, control_13
   - Use underscores to separate control and time point
