@@ -106,9 +106,10 @@ chmod +x *.py *.r *.sh
     # Size3ES Analysis
     --size3es-input-dir data/size3es \
     --size3es-output-dir output/size3es \
-    --size3es-months "control_8,sample_8,control_13,sample_13" \
+    --size3es-timepoints "8,13" \
+    --size3es-control-groups "control_8,control_13" \
+    --size3es-sample-groups "sample_8,sample_13" \
     --size3es-replicates "1,2" \
-    --size3es-control-group "control_8,control_13" \
     --size3es-pvalue-cutoff 0.05 \
     --size3es-effect-size-threshold 0.1 \
     --size3es-multiple-testing-correction BH
@@ -198,24 +199,44 @@ chmod +x *.py *.r *.sh
 #### 4. Size3ES Analysis
 The Size3ES analysis examines cell type interactions and their effect sizes across different time points and replicates. It uses a combination of Fisher's exact test and Cramer's V to assess the significance and strength of cell type interactions.
 
-- `--size3es-months`: Months to analyze [default: control_8,sample_8,control_13,sample_13]
-  - Options: control_8, sample_8, control_13, sample_13
-- `--size3es-replicates`: Replicates to use [default: 1,2]
-  - Options: 1, 2
-  - Specifies which biological replicates to include in the analysis
-  - Using both replicates (1,2) is recommended for robust results
-  - Example: control_8_1, control_8_2, sample_8_1, sample_8_2
-- `--size3es-control-group`: Control group name [default: control_8,control_13]
+##### Time Points and Groups
+- `--size3es-timepoints`: Time points to analyze [default: 8,13]
+  - Options: 8, 13
+  - Example: --size3es-timepoints "8,13"
+  - Specifies which time points to include in the analysis
+
+##### Group Specifications
+- `--size3es-control-groups`: Control group names [default: control_8,control_13]
   - Options: control_8, control_13
-  - Use underscores to separate control and time point
-- `--size3es-pvalue-cutoff`: P-value cutoff [default: 0.05]
+  - Example: --size3es-control-groups "control_8,control_13"
+  - Specifies the control groups for each time point
+
+- `--size3es-sample-groups`: Sample group names [default: sample_8,sample_13]
+  - Options: sample_8, sample_13
+  - Example: --size3es-sample-groups "sample_8,sample_13"
+  - Specifies the sample groups for each time point
+
+##### Replicate Information
+- `--size3es-replicates`: Replicates to include [default: 1,2]
+  - Options: 1, 2
+  - Applies to both control and sample groups
+  - Example: --size3es-replicates "1,2"
+  - Specifies which biological replicates to include in the analysis
+
+##### Statistical Parameters
+- `--size3es-pvalue-cutoff`: P-value threshold [default: 0.05]
   - Range: 0-1
+  - Example: --size3es-pvalue-cutoff 0.05
   - Used for filtering significant interactions
-- `--size3es-effect-size-threshold`: Effect size threshold [default: 0.1]
+
+- `--size3es-effect-size-threshold`: Minimum effect size [default: 0.1]
   - Range: 0-1
+  - Example: --size3es-effect-size-threshold 0.1
   - Minimum Cramer's V value to consider an interaction meaningful
-- `--size3es-multiple-testing-correction`: Correction method [default: BH]
+
+- `--size3es-multiple-testing-correction`: P-value correction method [default: BH]
   - Options: BH, bonferroni, holm, hochberg, none
+  - Example: --size3es-multiple-testing-correction BH
   - BH (Benjamini-Hochberg) recommended for most cases
 
 ### Output Format
