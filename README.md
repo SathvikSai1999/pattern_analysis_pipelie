@@ -20,16 +20,16 @@ The pipeline is optimized for analyzing spatial transcriptomics data with the fo
 - **Age Groups**: 
   - 8-month-old: control_8 and sample_8
   - 13-month-old: control_13 and sample_13
-- **Conditions**: AD vs. Wild-type (Control)
-- **Replicates**: 2 replicates each for AD and control at both timepoints
+- **Conditions**: AD/Sample vs. Wild-type (Control)
+- **Replicates**: 2 replicates each for AD/Sample and control at both timepoints
 
 ### Replicate Structure
-| Time Point | Condition | Number of Replicates |
-|------------|-----------|---------------------|
-| 8 months old | AD | 2 |
-| | Control | 2 |
-| 13 months old | AD | 2 |
-| | Control | 2 |
+|   Time Point   | Condition | Number of Replicates |
+|----------------|-----------|---------------------|
+| 8 months old   | AD/Sample |           2         |
+| 8 months old   |  Control  |           2         |
+| 13 months old  | AD/Sample |           2         |
+| 13 months old  |  Control  |           2         |
 
 Each replicate is labeled with an underscore and number (e.g., control_8_1, control_8_2, sample_8_1, sample_8_2).
 
