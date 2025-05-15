@@ -17,7 +17,9 @@ The pipeline is optimized for analyzing spatial transcriptomics data with the fo
 
 ### Sample Information
 - **Species**: Mouse (transgenic AD model)
-- **Age Groups**: 8-month-old and 13-month-old
+- **Age Groups**: 
+  - 8-month-old: control8 and sample8
+  - 13-month-old: control13 and sample13
 - **Conditions**: AD vs. Wild-type (Control)
 - **Replicates**: 2 replicates each for AD and control at both timepoints
 
@@ -94,7 +96,7 @@ chmod +x *.py *.r *.sh
     # Size3ES Analysis
     --size3es-input-dir data/size3es \
     --size3es-output-dir output/size3es \
-    --size3es-months "8,13" \
+    --size3es-months "control8,sample8,control13,sample13" \
     --size3es-replicates "1,2" \
     --size3es-control-group control \
     --size3es-pvalue-cutoff 0.05 \
@@ -184,108 +186,32 @@ chmod +x *.py *.r *.sh
   - Options: Secreted Signaling, ECM-Receptor, Cell-Cell Contact
 
 #### 4. Size3ES Analysis
-The Size3ES (Size and Effect Size) analysis is a comprehensive approach to examine cell type interactions and their effect sizes across different time points and replicates. This analysis combines statistical significance testing with effect size measurements to provide a robust understanding of cell type interactions.
+The Size3ES analysis examines cell type interactions and their effect sizes across different time points and replicates. It uses a combination of Fisher's exact test and Cramer's V to assess the significance and strength of cell type interactions.
 
-### Purpose
-- Identifies significant cell type interactions across different time points
-- Quantifies the strength of these interactions using effect sizes
-- Helps understand how cell type relationships change with disease progression
-- Provides a comprehensive view of cell type dynamics in the tissue
-
-### Methodology
-1. **Size Analysis**:
-   - Examines the frequency of cell type interactions
-   - Calculates occurrence numbers for each cell type triplet
-   - Ranks interactions based on their frequency
-   - Helps identify common and rare cell type interactions
-
-2. **Effect Size Analysis**:
-   - Uses Cramer's V to measure the strength of associations
-   - Provides a standardized measure of effect size (0-1)
-   - Helps distinguish between statistically significant and biologically meaningful interactions
-   - Accounts for sample size differences
-
-3. **Statistical Testing**:
-   - Combines results from multiple replicates using Fisher's method
-   - Applies multiple testing correction (default: Benjamini-Hochberg)
-   - Filters interactions based on p-value and effect size thresholds
-   - Ensures robust and reproducible findings
-
-### Parameters
-- `--size3es-months`: Months to analyze [default: 8,13]
-  - Options: 8, 13
-  - Allows comparison of interactions across different time points
+- `--size3es-months`: Months to analyze [default: control8,sample8,control13,sample13]
+  - Options: control8, sample8, control13, sample13
 - `--size3es-replicates`: Replicates to use [default: 1,2]
   - Options: 1, 2
-  - Enables robust analysis by combining multiple replicates
 - `--size3es-control-group`: Control group name [default: control]
-  - Specifies the reference group for comparison
 - `--size3es-pvalue-cutoff`: P-value cutoff [default: 0.05]
   - Range: 0-1
-  - Filters statistically significant interactions
+  - Used for filtering significant interactions
 - `--size3es-effect-size-threshold`: Effect size threshold [default: 0.1]
   - Range: 0-1
-  - Minimum Cramer's V value for meaningful interactions
+  - Minimum Cramer's V value to consider an interaction meaningful
 - `--size3es-multiple-testing-correction`: Correction method [default: BH]
   - Options: BH, bonferroni, holm, hochberg, none
-  - Controls for multiple hypothesis testing
+  - BH (Benjamini-Hochberg) recommended for most cases
 
 ### Output Format
 The Size3ES analysis generates CSV files with the following columns:
 - `tri_celltype`: Cell type triplet (e.g., "Astro&CA1&CTX-Ex")
-  - Represents the three cell types involved in the interaction
 - `occurrence_num`: Number of occurrences
-  - Indicates how frequently the interaction is observed
 - `rank`: Interaction rank
-  - Orders interactions by their significance and effect size
 - `meta_p`: Combined p-value from Fisher's exact tests
-  - Statistical significance across replicates
 - `effect_size_1`: Effect size for first cell type
 - `effect_size_2`: Effect size for second cell type
 - `effect_size_3`: Effect size for third cell type
-  - Measures the strength of each cell type's contribution
-
-### Example Usage
-```bash
-./run_pattern_analysis_pipeline.sh \
-    --run-only size3es \
-    --size3es-input-dir data/size3es \
-    --size3es-output-dir output/size3es \
-    --size3es-months "8,13" \
-    --size3es-replicates "1,2" \
-    --size3es-control-group control \
-    --size3es-pvalue-cutoff 0.05 \
-    --size3es-effect-size-threshold 0.1 \
-    --size3es-multiple-testing-correction BH
-```
-
-### Interpretation
-1. **High Occurrence, High Effect Size**:
-   - Strong, frequent interactions
-   - Likely to be biologically important
-   - Good candidates for further investigation
-
-2. **High Occurrence, Low Effect Size**:
-   - Common but weak interactions
-   - May represent background or baseline relationships
-   - Less likely to be disease-specific
-
-3. **Low Occurrence, High Effect Size**:
-   - Rare but strong interactions
-   - Could indicate specialized or context-specific relationships
-   - May be important in specific conditions
-
-4. **Low Occurrence, Low Effect Size**:
-   - Rare and weak interactions
-   - May be noise or technical artifacts
-   - Generally less biologically relevant
-
-### Best Practices
-1. Always examine both statistical significance and effect size
-2. Compare results across different time points
-3. Consider biological context when interpreting results
-4. Use appropriate multiple testing correction
-5. Validate findings with complementary analyses
 
 ## Input/Output Structure
 
