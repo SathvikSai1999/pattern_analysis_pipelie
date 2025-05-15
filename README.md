@@ -18,8 +18,8 @@ The pipeline is optimized for analyzing spatial transcriptomics data with the fo
 ### Sample Information
 - **Species**: Mouse (transgenic AD model)
 - **Age Groups**: 
-  - 8-month-old: control8 and sample8
-  - 13-month-old: control13 and sample13
+  - 8-month-old: control_8 and sample_8
+  - 13-month-old: control_13 and sample_13
 - **Conditions**: AD vs. Wild-type (Control)
 - **Replicates**: 2 replicates each for AD and control at both timepoints
 
@@ -96,7 +96,7 @@ chmod +x *.py *.r *.sh
     # Size3ES Analysis
     --size3es-input-dir data/size3es \
     --size3es-output-dir output/size3es \
-    --size3es-months "control8,sample8,control13,sample13" \
+    --size3es-months "control_8,sample_8,control_13,sample_13" \
     --size3es-replicates "1,2" \
     --size3es-control-group "control_8,control_13" \
     --size3es-pvalue-cutoff 0.05 \
@@ -188,8 +188,8 @@ chmod +x *.py *.r *.sh
 #### 4. Size3ES Analysis
 The Size3ES analysis examines cell type interactions and their effect sizes across different time points and replicates. It uses a combination of Fisher's exact test and Cramer's V to assess the significance and strength of cell type interactions.
 
-- `--size3es-months`: Months to analyze [default: control8,sample8,control13,sample13]
-  - Options: control8, sample8, control13, sample13
+- `--size3es-months`: Months to analyze [default: control_8,sample_8,control_13,sample_13]
+  - Options: control_8, sample_8, control_13, sample_13
 - `--size3es-replicates`: Replicates to use [default: 1,2]
   - Options: 1, 2
 - `--size3es-control-group`: Control group name [default: control_8,control_13]
