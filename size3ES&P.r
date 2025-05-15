@@ -7,9 +7,10 @@ library(parallel)
 args <- commandArgs(trailingOnly = TRUE)
 
 # Default values
-months <- c(8,13)
-replicates <- c(1,2)
-control_group <- c('control')
+timepoints <- c(8, 13)
+control_groups <- c('control_8', 'control_13')
+sample_groups <- c('sample_8', 'sample_13')
+replicates <- c(1, 2)
 p_value_cutoff <- 0.05
 effect_size_threshold <- 0.1
 multiple_testing_correction <- "BH"
@@ -17,20 +18,63 @@ output_dir <- "output/size3es"
 
 # Parse arguments
 for (arg in args) {
-    if (grepl("--months=", arg)) {
-        months <- as.numeric(strsplit(sub("--months=", "", arg), ",")[[1]])
-    } else if (grepl("--replicates=", arg)) {
-        replicates <- as.numeric(strsplit(sub("--replicates=", "", arg), ",")[[1]])
-    } else if (grepl("--control-group=", arg)) {
-        control_group <- sub("--control-group=", "", arg)
-    } else if (grepl("--p-value-cutoff=", arg)) {
-        p_value_cutoff <- as.numeric(sub("--p-value-cutoff=", "", arg))
-    } else if (grepl("--effect-size-threshold=", arg)) {
-        effect_size_threshold <- as.numeric(sub("--effect-size-threshold=", "", arg))
-    } else if (grepl("--multiple-testing-correction=", arg)) {
-        multiple_testing_correction <- sub("--multiple-testing-correction=", "", arg)
-    } else if (grepl("--output-dir=", arg)) {
-        output_dir <- sub("--output-dir=", "", arg)
+    if (grepl("--size3es-timepoints=", arg)) {
+        timepoints <- as.numeric(strsplit(sub("--size3es-timepoints=", "", arg), ",")[[1]])
+    } else if (grepl("--size3es-control-groups=", arg)) {
+        control_groups <- strsplit(sub("--size3es-control-groups=", "", arg), ",")[[1]]
+    } else if (grepl("--size3es-sample-groups=", arg)) {
+        sample_groups <- strsplit(sub("--size3es-sample-groups=", "", arg), ",")[[1]]
+    } else if (grepl("--size3es-replicates=", arg)) {
+        replicates <- as.numeric(strsplit(sub("--size3es-replicates=", "", arg), ",")[[1]])
+    } else if (grepl("--size3es-pvalue-cutoff=", arg)) {
+        p_value_cutoff <- as.numeric(sub("--size3es-pvalue-cutoff=", "", arg))
+    } else if (grepl("--size3es-effect-size-threshold=", arg)) {
+        effect_size_threshold <- as.numeric(sub("--size3es-effect-size-threshold=", "", arg))
+    } else if (grepl("--size3es-multiple-testing-correction=", arg)) {
+        multiple_testing_correction <- sub("--size3es-multiple-testing-correction=", "", arg)
+    } else if (grepl("--size3es-output-dir=", arg)) {
+        output_dir <- sub("--size3es-output-dir=", "", arg)
+    }
+}
+
+# Validate input parameters
+validate_parameters <- function() {
+    # Check timepoints
+    if (!all(timepoints %in% c(8, 13))) {
+        stop("Invalid timepoints. Must be 8 and/or 13.")
+    }
+    
+    # Check control groups
+    expected_control_groups <- paste0("control_", timepoints)
+    if (!all(control_groups %in% expected_control_groups)) {
+        stop("Invalid control groups. Must match timepoints.")
+    }
+    
+    # Check sample groups
+    expected_sample_groups <- paste0("sample_", timepoints)
+    if (!all(sample_groups %in% expected_sample_groups)) {
+        stop("Invalid sample groups. Must match timepoints.")
+    }
+    
+    # Check replicates
+    if (!all(replicates %in% c(1, 2))) {
+        stop("Invalid replicates. Must be 1 and/or 2.")
+    }
+    
+    # Check p-value cutoff
+    if (p_value_cutoff < 0 || p_value_cutoff > 1) {
+        stop("Invalid p-value cutoff. Must be between 0 and 1.")
+    }
+    
+    # Check effect size threshold
+    if (effect_size_threshold < 0 || effect_size_threshold > 1) {
+        stop("Invalid effect size threshold. Must be between 0 and 1.")
+    }
+    
+    # Check multiple testing correction
+    valid_corrections <- c("BH", "bonferroni", "holm", "hochberg", "none")
+    if (!multiple_testing_correction %in% valid_corrections) {
+        stop("Invalid multiple testing correction method.")
     }
 }
 
@@ -48,12 +92,12 @@ if (!dir.exists(output_dir)) {
     dir.create(output_dir, recursive = TRUE)
 }
 
-process_replicate <- function(m, c, r) {
-    print(sprintf("Processing month %d, replicate %d", m, r))
+process_replicate <- function(timepoint, group, replicate) {
+    print(sprintf("Processing timepoint %d, group %s, replicate %d", timepoint, group, replicate))
     
     # Check if input files exist
-    node_rank_file <- sprintf('result_rank/AD_%dm_r%d_control_node_rank.csv', m, r)
-    tri_rank_file <- sprintf('result_rank/AD_%dm_r%d_control_tri_rank.csv', m, r)
+    node_rank_file <- sprintf('result_rank/%s_%d_control_node_rank.csv', group, replicate)
+    tri_rank_file <- sprintf('result_rank/%s_%d_control_tri_rank.csv', group, replicate)
     
     if (!file.exists(node_rank_file)) {
         warning(sprintf("Node rank file not found: %s", node_rank_file))
@@ -136,20 +180,39 @@ process_replicate <- function(m, c, r) {
             data$meta_p <- p.adjust(data$meta_p, method = multiple_testing_correction)
         }
         
-        file_path <- file.path(output_dir, sprintf('AD_%d_control_%d_tri_ES&P.csv', m, r))
+        # Create output filename with new naming convention
+        output_file <- sprintf('%s_%d_control_%d_tri_ES&P.csv', 
+                             ifelse(grepl("control", group), "control", "sample"),
+                             timepoint, 
+                             replicate)
+        file_path <- file.path(output_dir, output_file)
+        
         write.csv(data, file = file_path, append = FALSE, row.names=FALSE)
-        print(sprintf("Completed processing month %d, replicate %d", m, r))
+        print(sprintf("Completed processing timepoint %d, group %s, replicate %d", 
+                     timepoint, group, replicate))
         
     }, error = function(e) {
-        warning(sprintf("Error processing files for month %d, replicate %d: %s", m, r, e$message))
+        warning(sprintf("Error processing files for timepoint %d, group %s, replicate %d: %s", 
+                       timepoint, group, replicate, e$message))
     })
 }
 
+# Validate parameters before processing
+validate_parameters()
+
 # Process all combinations in parallel
-mclapply(months, function(m) {
-    lapply(control_group, function(c) {
+mclapply(timepoints, function(tp) {
+    # Process control groups
+    lapply(control_groups[grepl(paste0("_", tp), control_groups)], function(cg) {
         lapply(replicates, function(r) {
-            process_replicate(m, c, r)
+            process_replicate(tp, cg, r)
+        })
+    })
+    
+    # Process sample groups
+    lapply(sample_groups[grepl(paste0("_", tp), sample_groups)], function(sg) {
+        lapply(replicates, function(r) {
+            process_replicate(tp, sg, r)
         })
     })
 }, mc.cores = num_cores)
