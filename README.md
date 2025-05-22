@@ -1,15 +1,16 @@
 # TrimNN Analysis Pipeline
 
-A comprehensive pipeline for analyzing spatial transcriptomics data, including motif extraction, differential expression analysis, GO and pathway analysis, and cell-cell communication analysis.
+A comprehensive pipeline for analyzing spatial transcriptomics data, including motif extraction, differential expression analysis, GO analysis, pathway analysis, and cell-cell communication analysis.
 
 ## Overview
 
 The pipeline performs the following analyses:
 1. Motif extraction from spatial data
 2. Differential Expression Gene (DEG) analysis
-3. Gene Ontology (GO) and pathway analysis
-4. CellChat analysis for cell-cell communication
-5. Size and Effect Size analysis (Size3ES)
+3. Gene Ontology (GO) analysis
+4. Pathway analysis
+5. CellChat analysis for cell-cell communication
+6. Size and Effect Size analysis (Size3ES)
 
 ## Dataset Specifications
 
@@ -71,7 +72,7 @@ chmod +x *.py *.r *.sh
 ./run_pattern_analysis_pipeline.sh
 
 # Run specific analyses
-./run_pattern_analysis_pipeline.sh --run-only deg,go
+./run_pattern_analysis_pipeline.sh --run-only deg,go,pathway
 ```
 
 ### Complete Pipeline Example
@@ -91,10 +92,16 @@ chmod +x *.py *.r *.sh
     --go-input-dir data/GO \
     --go-output-dir output/GO \
     --go-pvalue-cutoff 0.005 \
-    --pathway-db KEGG \
-    --species mouse \
     --go-qvalue-cutoff 0.01 \
     --go-show-category 30 \
+    
+    # Pathway Analysis
+    --pathway-input-dir data/pathway \
+    --pathway-output-dir output/pathway \
+    --pathway-pvalue-cutoff 0.005 \
+    --pathway-qvalue-cutoff 0.01 \
+    --pathway-show-category 30 \
+    --pathway-db KEGG \
     
     # CellChat Analysis
     --cellchat-input-dir data/cellchat \
@@ -104,12 +111,15 @@ chmod +x *.py *.r *.sh
     --cellchat-search "ECM-Receptor" \
     
     # Size3ES Analysis
-    --size3es-input-dir data/size3es \
+    --size3es-control- data/size3es/spatial_8months-control-replicate_1.csv \
+    --size3es-control- data/size3es/spatial_8months-control-replicate_2.csv \
+    --size3es-control- data/size3es/spatial_13months-control-replicate_1.csv \
+    --size3es-control- data/size3es/spatial_13months-control-replicate_2.csv \
+    --size3es-sample- data/size3es/spatial_8months-disease-replicate_1.csv \
+    --size3es-sample- data/size3es/spatial_8months-disease-replicate_2.csv \
+    --size3es-sample- data/size3es/spatial_13months-disease-replicate_1.csv \
+    --size3es-sample- data/size3es/spatial_13months-disease-replicate_2.csv \
     --size3es-output-dir output/size3es \
-    --size3es-timepoints "8,13" \
-    --size3es-control-groups "control_8,control_13" \
-    --size3es-sample-groups "sample_8,sample_13" \
-    --size3es-replicates "1,2" \
     --size3es-pvalue-cutoff 0.05 \
     --size3es-effect-size-threshold 0.1 \
     --size3es-multiple-testing-correction BH
@@ -119,7 +129,7 @@ chmod +x *.py *.r *.sh
 
 ### General Options
 - `--run-only`: Specify analyses to run [default: all]
-  - Options: all, deg, go, cellchat, size3es
+  - Options: all, deg, go, pathway, cellchat, size3es
   - Multiple values allowed (comma-separated)
 
 ### Analysis-Specific Parameters
@@ -179,16 +189,22 @@ chmod +x *.py *.r *.sh
 #### 2. GO Analysis
 - `--go-pvalue-cutoff`: P-value cutoff [default: 0.01]
   - Range: 0-1
-- `--pathway-db`: Pathway database [default: Reactome]
-  - Options: Reactome, KEGG, GO
-- `--species`: Organism/species [default: mouse]
-  - Options: mouse, human
 - `--go-qvalue-cutoff`: Q-value cutoff [default: 0.05]
   - Range: 0-1
 - `--go-show-category`: Categories to show [default: 20]
   - Range: 1-100
 
-#### 3. CellChat Analysis
+#### 3. Pathway Analysis
+- `--pathway-pvalue-cutoff`: P-value cutoff [default: 0.01]
+  - Range: 0-1
+- `--pathway-qvalue-cutoff`: Q-value cutoff [default: 0.05]
+  - Range: 0-1
+- `--pathway-show-category`: Categories to show [default: 20]
+  - Range: 1-100
+- `--pathway-db`: Pathway database [default: Reactome]
+  - Options: Reactome, KEGG
+
+#### 4. CellChat Analysis
 - `--cellchat-type`: Communication probability type [default: truncatedMean]
   - Options: truncatedMean, mean, median
 - `--cellchat-trim`: Trimming factor [default: 0.1]
@@ -196,47 +212,59 @@ chmod +x *.py *.r *.sh
 - `--cellchat-search`: Search type [default: Secreted Signaling]
   - Options: Secreted Signaling, ECM-Receptor, Cell-Cell Contact
 
-#### 4. Size3ES Analysis
-The Size3ES analysis examines cell type interactions and their effect sizes across different time points and replicates. It uses a combination of Fisher's exact test and Cramer's V to assess the significance and strength of cell type interactions.
+#### 5. Size3ES Analysis
+The Size3ES analysis examines cell type interactions and their effect sizes between control and sample conditions. It uses a combination of Fisher's exact test and Cramer's V to assess the significance and strength of cell type interactions.
 
-##### Time Points and Groups
-- `--size3es-timepoints`: Time points to analyze [default: 8,13]
-  - Options: 8, 13
-  - Example: --size3es-timepoints "8,13"
-  - Specifies which time points to include in the analysis
+##### Input Data Structure
+Expected directory structure:
+```
+data/
+├── control/
+│   ├── 8m/
+│   │   ├── r1_spatial.csv
+│   │   └── r2_spatial.csv
+│   └── 13m/
+│       ├── r1_spatial.csv
+│       └── r2_spatial.csv
+└── sample/
+    ├── 8m/
+    │   ├── r1_spatial.csv
+    │   └── r2_spatial.csv
+    └── 13m/
+        ├── r1_spatial.csv
+        └── r2_spatial.csv
+```
 
-##### Group Specifications
-- `--size3es-control-groups`: Control group names [default: control_8,control_13]
-  - Options: control_8, control_13
-  - Example: --size3es-control-groups "control_8,control_13"
-  - Specifies the control groups for each time point
+##### Command Line Arguments
+- `--size3es-control-dir`: Directory containing control samples
+- `--size3es-sample-dir`: Directory containing sample/AD samples
+- `--size3es-timepoints`: Comma-separated list of time points (e.g., "8,13")
+- `--size3es-replicates`: Comma-separated list of replicates (e.g., "1,2")
 
-- `--size3es-sample-groups`: Sample group names [default: sample_8,sample_13]
-  - Options: sample_8, sample_13
-  - Example: --size3es-sample-groups "sample_8,sample_13"
-  - Specifies the sample groups for each time point
+##### Output Files
+- Control results (in `output/size3es/`):
+  - `control_8m_tri_ES&P.csv`: 8-month results
+  - `control_13m_tri_ES&P.csv`: 13-month results
 
-##### Replicate Information
-- `--size3es-replicates`: Replicates to include [default: 1,2]
-  - Options: 1, 2
-  - Applies to both control and sample groups
-  - Example: --size3es-replicates "1,2"
-  - Specifies which biological replicates to include in the analysis
+- Sample results (in `output/size3es/`):
+  - `sample_8m_tri_ES&P.csv`: 8-month results
+  - `sample_13m_tri_ES&P.csv`: 13-month results
+
+- Comparison results (in `output/size3es/`):
+  - `comparison_8m_results.csv`: 8-month comparison
+  - `comparison_13m_results.csv`: 13-month comparison
 
 ##### Statistical Parameters
 - `--size3es-pvalue-cutoff`: P-value threshold [default: 0.05]
   - Range: 0-1
-  - Example: --size3es-pvalue-cutoff 0.05
   - Used for filtering significant interactions
 
 - `--size3es-effect-size-threshold`: Minimum effect size [default: 0.1]
   - Range: 0-1
-  - Example: --size3es-effect-size-threshold 0.1
   - Minimum Cramer's V value to consider an interaction meaningful
 
 - `--size3es-multiple-testing-correction`: P-value correction method [default: BH]
   - Options: BH, bonferroni, holm, hochberg, none
-  - Example: --size3es-multiple-testing-correction BH
   - BH (Benjamini-Hochberg) recommended for most cases
 
 ### Output Format

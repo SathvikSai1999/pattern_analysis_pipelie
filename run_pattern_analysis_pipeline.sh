@@ -8,6 +8,7 @@ VERSION="1.0.0"                   # Pipeline version
 MOTIF_INPUT_DIR="data/motifs"     # Input directory for motif extraction
 DEG_INPUT_DIR="data/DEG"          # Input directory for DEG analysis
 GO_INPUT_DIR="data/GO"            # Input directory for GO analysis
+PATHWAY_INPUT_DIR="data/pathway"  # Input directory for Pathway analysis
 CELLCHAT_INPUT_DIR="data/cellchat" # Input directory for CellChat
 SIZE3ES_INPUT_DIR="data/size3es"  # Input directory for Size3ES
 
@@ -15,17 +16,21 @@ SIZE3ES_INPUT_DIR="data/size3es"  # Input directory for Size3ES
 MOTIF_OUTPUT_DIR="output/motifs"     # Output directory for motifs
 DEG_OUTPUT_DIR="output/DEG"          # Output directory for DEG
 GO_OUTPUT_DIR="output/GO"            # Output directory for GO
+PATHWAY_OUTPUT_DIR="output/pathway"  # Output directory for Pathway
 CELLCHAT_OUTPUT_DIR="output/cellchat" # Output directory for CellChat
 SIZE3ES_OUTPUT_DIR="output/size3es"   # Output directory for Size3ES
 
 DEG_P_ADJ_CUTOFF="0.05"            # Default adjusted p-value cutoff for DEG analysis
 GO_PVALUE_CUTOFF="0.01"            # Default p-value cutoff for GO analysis
-PATHWAY_DB="Reactome"              # Default pathway database
+GO_QVALUE_CUTOFF="0.05"           # Default q-value cutoff for GO analysis
+GO_SHOW_CATEGORY="20"             # Default number of categories to show in GO plots
+PATHWAY_PVALUE_CUTOFF="0.01"      # Default p-value cutoff for Pathway analysis
+PATHWAY_QVALUE_CUTOFF="0.05"      # Default q-value cutoff for Pathway analysis
+PATHWAY_SHOW_CATEGORY="20"        # Default number of categories to show in Pathway plots
+PATHWAY_DB="Reactome"             # Default pathway database
 CELLCHAT_TYPE="truncatedMean"      # Default CellChat communication probability type
 CELLCHAT_TRIM="0.1"               # Default CellChat trimming factor
 CELLCHAT_SEARCH="Secreted Signaling" # Default CellChat search type
-GO_QVALUE_CUTOFF="0.05"           # Default q-value cutoff for GO analysis
-GO_SHOW_CATEGORY="20"             # Default number of categories to show in GO plots
 SIZE3ES_TIMEPOINTS="8,13"             # Default timepoints for size analysis
 SIZE3ES_CONTROL_GROUPS="control_8,control_13" # Default control groups
 SIZE3ES_SAMPLE_GROUPS="sample_8,sample_13"   # Default sample groups
@@ -85,7 +90,7 @@ usage() {
     echo "    $0"
     echo ""
     echo "2. Run Specific Analysis Steps:"
-    echo "    $0 --run-only deg,go"
+    echo "    $0 --run-only deg,go,pathway"
     echo ""
     echo "3. Full Pipeline with Custom Parameters:"
     echo "    $0 \\"
@@ -95,6 +100,8 @@ usage() {
     echo "      --deg-output-dir /path/to/deg/output \\"
     echo "      --go-input-dir /path/to/go/input \\"
     echo "      --go-output-dir /path/to/go/output \\"
+    echo "      --pathway-input-dir /path/to/pathway/input \\"
+    echo "      --pathway-output-dir /path/to/pathway/output \\"
     echo "      --cellchat-input-dir /path/to/cellchat/input \\"
     echo "      --cellchat-output-dir /path/to/cellchat/output \\"
     echo "      --size3es-input-dir /path/to/size3es/input \\"
@@ -113,11 +120,19 @@ usage() {
     echo "      --go-input-dir /path/to/go/input \\"
     echo "      --go-output-dir /path/to/go/output \\"
     echo "      --go-pvalue-cutoff 0.005 \\"
-    echo "      --pathway-db KEGG \\"
     echo "      --go-qvalue-cutoff 0.01 \\"
     echo "      --go-show-category 30"
     echo ""
-    echo "6. Advanced CellChat Analysis:"
+    echo "6. Advanced Pathway Analysis:"
+    echo "    $0 --run-only pathway \\"
+    echo "      --pathway-input-dir /path/to/pathway/input \\"
+    echo "      --pathway-output-dir /path/to/pathway/output \\"
+    echo "      --pathway-pvalue-cutoff 0.005 \\"
+    echo "      --pathway-qvalue-cutoff 0.01 \\"
+    echo "      --pathway-show-category 30 \\"
+    echo "      --pathway-db KEGG"
+    echo ""
+    echo "7. Advanced CellChat Analysis:"
     echo "    $0 --run-only cellchat \\"
     echo "      --cellchat-input-dir /path/to/cellchat/input \\"
     echo "      --cellchat-output-dir /path/to/cellchat/output \\"
@@ -125,7 +140,7 @@ usage() {
     echo "      --cellchat-trim 0.2 \\"
     echo "      --cellchat-search 'ECM-Receptor'"
     echo ""
-    echo "7. Advanced Size3ES Analysis:"
+    echo "8. Advanced Size3ES Analysis:"
     echo "    $0 --run-only size3es \\"
     echo "      --size3es-input-dir /path/to/size3es/input \\"
     echo "      --size3es-output-dir /path/to/size3es/output \\"
@@ -141,7 +156,7 @@ usage() {
     echo ""
     echo "General Options:"
     echo "  --run-only VALUE           Specify which analyses to run [default: all]"
-    echo "                             Options: all, deg, go, cellchat, size3es"
+    echo "                             Options: all, deg, go, pathway, cellchat, size3es"
     echo "                             Multiple values allowed, comma-separated"
     echo "  --version                  Display pipeline version"
     echo ""
@@ -152,6 +167,8 @@ usage() {
     echo "  --deg-output-dir PATH      Output directory for DEG analysis"
     echo "  --go-input-dir PATH        Input directory for GO analysis"
     echo "  --go-output-dir PATH       Output directory for GO analysis"
+    echo "  --pathway-input-dir PATH   Input directory for Pathway analysis"
+    echo "  --pathway-output-dir PATH  Output directory for Pathway analysis"
     echo "  --cellchat-input-dir PATH  Input directory for CellChat analysis"
     echo "  --cellchat-output-dir PATH Output directory for CellChat analysis"
     echo "  --size3es-input-dir PATH   Input directory for Size3ES analysis"
@@ -165,10 +182,15 @@ usage() {
     echo ""
     echo "GO Analysis Options:"
     echo "  --go-pvalue-cutoff VALUE   P-value cutoff [default: 0.01]"
-    echo "  --pathway-db VALUE         Pathway database [default: Reactome]"
-    echo "                             Options: Reactome, KEGG, GO"
     echo "  --go-qvalue-cutoff VALUE   Q-value cutoff [default: 0.05]"
     echo "  --go-show-category VALUE   Number of categories to show [default: 20]"
+    echo ""
+    echo "Pathway Analysis Options:"
+    echo "  --pathway-pvalue-cutoff VALUE   P-value cutoff [default: 0.01]"
+    echo "  --pathway-qvalue-cutoff VALUE   Q-value cutoff [default: 0.05]"
+    echo "  --pathway-show-category VALUE   Number of categories to show [default: 20]"
+    echo "  --pathway-db VALUE         Pathway database [default: Reactome]"
+    echo "                             Options: Reactome, KEGG"
     echo ""
     echo "CellChat Options:"
     echo "  --cellchat-type VALUE      Communication probability type [default: truncatedMean]"
@@ -203,7 +225,7 @@ while [[ $# -gt 0 ]]; do
     case $1 in
         --run-only)
             RUN_ONLY="$2"
-            validate_list "run-only" "$RUN_ONLY" "all deg go cellchat size3es"
+            validate_list "run-only" "$RUN_ONLY" "all deg go pathway cellchat size3es"
             shift 2
             ;;
         --motif-input-dir)
@@ -230,6 +252,14 @@ while [[ $# -gt 0 ]]; do
             GO_OUTPUT_DIR="$2"
             shift 2
             ;;
+        --pathway-input-dir)
+            PATHWAY_INPUT_DIR="$2"
+            shift 2
+            ;;
+        --pathway-output-dir)
+            PATHWAY_OUTPUT_DIR="$2"
+            shift 2
+            ;;
         --cellchat-input-dir)
             CELLCHAT_INPUT_DIR="$2"
             shift 2
@@ -251,19 +281,39 @@ while [[ $# -gt 0 ]]; do
             validate_numeric "DEG-p-adj-cutoff" "$DEG_P_ADJ_CUTOFF" 0 1
             shift 2
             ;;
-        --DEG-method)
-            DEG_METHOD="$2"
-            validate_list "DEG-method" "$DEG_METHOD" "deseq2 wilcox both"
-            shift 2
-            ;;
         --go-pvalue-cutoff)
             GO_PVALUE_CUTOFF="$2"
             validate_numeric "go-pvalue-cutoff" "$GO_PVALUE_CUTOFF" 0 1
             shift 2
             ;;
+        --go-qvalue-cutoff)
+            GO_QVALUE_CUTOFF="$2"
+            validate_numeric "go-qvalue-cutoff" "$GO_QVALUE_CUTOFF" 0 1
+            shift 2
+            ;;
+        --go-show-category)
+            GO_SHOW_CATEGORY="$2"
+            validate_numeric "go-show-category" "$GO_SHOW_CATEGORY" 1 100
+            shift 2
+            ;;
+        --pathway-pvalue-cutoff)
+            PATHWAY_PVALUE_CUTOFF="$2"
+            validate_numeric "pathway-pvalue-cutoff" "$PATHWAY_PVALUE_CUTOFF" 0 1
+            shift 2
+            ;;
+        --pathway-qvalue-cutoff)
+            PATHWAY_QVALUE_CUTOFF="$2"
+            validate_numeric "pathway-qvalue-cutoff" "$PATHWAY_QVALUE_CUTOFF" 0 1
+            shift 2
+            ;;
+        --pathway-show-category)
+            PATHWAY_SHOW_CATEGORY="$2"
+            validate_numeric "pathway-show-category" "$PATHWAY_SHOW_CATEGORY" 1 100
+            shift 2
+            ;;
         --pathway-db)
             PATHWAY_DB="$2"
-            validate_list "pathway-db" "$PATHWAY_DB" "Reactome KEGG GO"
+            validate_list "pathway-db" "$PATHWAY_DB" "Reactome KEGG"
             shift 2
             ;;
         --cellchat-type)
@@ -279,16 +329,6 @@ while [[ $# -gt 0 ]]; do
         --cellchat-search)
             CELLCHAT_SEARCH="$2"
             validate_list "cellchat-search" "$CELLCHAT_SEARCH" "Secreted Signaling ECM-Receptor Cell-Cell Contact"
-            shift 2
-            ;;
-        --go-qvalue-cutoff)
-            GO_QVALUE_CUTOFF="$2"
-            validate_numeric "go-qvalue-cutoff" "$GO_QVALUE_CUTOFF" 0 1
-            shift 2
-            ;;
-        --go-show-category)
-            GO_SHOW_CATEGORY="$2"
-            validate_numeric "go-show-category" "$GO_SHOW_CATEGORY" 1 100
             shift 2
             ;;
         --size3es-timepoints)
@@ -309,14 +349,22 @@ while [[ $# -gt 0 ]]; do
             ;;
         --size3es-pvalue-cutoff)
             SIZE3ES_PVALUE_CUTOFF="$2"
+            validate_numeric "size3es-pvalue-cutoff" "$SIZE3ES_PVALUE_CUTOFF" 0 1
             shift 2
             ;;
         --size3es-effect-size-threshold)
             SIZE3ES_EFFECT_SIZE_THRESHOLD="$2"
+            validate_numeric "size3es-effect-size-threshold" "$SIZE3ES_EFFECT_SIZE_THRESHOLD" 0 1
             shift 2
             ;;
         --size3es-multiple-testing-correction)
             SIZE3ES_MULTIPLE_TESTING_CORRECTION="$2"
+            validate_list "size3es-multiple-testing-correction" "$SIZE3ES_MULTIPLE_TESTING_CORRECTION" "BH bonferroni holm hochberg none"
+            shift 2
+            ;;
+        --DEG-method)
+            DEG_METHOD="$2"
+            validate_list "DEG-method" "$DEG_METHOD" "deseq2 wilcox both"
             shift 2
             ;;
         --version)
@@ -326,7 +374,7 @@ while [[ $# -gt 0 ]]; do
             usage
             ;;
         *)
-            echo "Unknown option: $1"
+            echo "Error: Unknown option $1"
             usage
             ;;
     esac
@@ -355,9 +403,6 @@ DEG_CMD="Rscript DEG_wrapper.r --DEG-method ${DEG_METHOD:-both} --DEG-p-adj-cuto
 GO_CMD="Rscript go_and_pathway.r --input-dir $GO_INPUT_DIR --output-dir $GO_OUTPUT_DIR"
 if [ ! -z "$GO_PVALUE_CUTOFF" ]; then
     GO_CMD="$GO_CMD --pvalue-cutoff=$GO_PVALUE_CUTOFF"
-fi
-if [ ! -z "$PATHWAY_DB" ]; then
-    GO_CMD="$GO_CMD --pathway-db=$PATHWAY_DB"
 fi
 if [ ! -z "$GO_QVALUE_CUTOFF" ]; then
     GO_CMD="$GO_CMD --qvalue-cutoff=$GO_QVALUE_CUTOFF"
@@ -433,10 +478,22 @@ fi
 # Run Size3ES analysis if requested
 if [[ "$RUN_ONLY" == "all" || "$RUN_ONLY" == "size3es" ]]; then
     echo "Running Size3ES analysis..."
-    if ! eval "$SIZE3ES_CMD"; then
-        echo "Size3ES analysis failed."
-        exit 1
-    fi
+    mkdir -p "$SIZE3ES_OUTPUT_DIR"
+    for input_file in $SIZE3ES_INPUT_DIR/*.csv; do
+        base_name=$(basename "$input_file" .csv)
+        output_file="$SIZE3ES_OUTPUT_DIR/${base_name}_tri_ES&P.csv"
+        echo "Processing $input_file -> $output_file"
+        Rscript size3ESP.r \
+            --input-file "$input_file" \
+            --output-file "$output_file" \
+            --pvalue-cutoff "$SIZE3ES_PVALUE_CUTOFF" \
+            --effect-size-threshold "$SIZE3ES_EFFECT_SIZE_THRESHOLD" \
+            --multiple-testing-correction "$SIZE3ES_MULTIPLE_TESTING_CORRECTION"
+        if [[ $? -ne 0 ]]; then
+            echo "Size3ES analysis failed for $input_file."
+            exit 1
+        fi
+    done
 fi
 
 echo "==============================="
